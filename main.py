@@ -11,20 +11,18 @@ st.markdown("""
     <style>
     .stApp { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
     .p-card {
-        background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3); padding: 25px; border-radius: 20px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3); padding: 15px; border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 12px;
     }
-    .welcome-text { color: #1e3a8a; font-weight: 900; font-size: 35px; margin-bottom: 5px; }
-    .badge-paid { background-color: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
-    .badge-debt { background-color: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+    .welcome-text { color: #1e3a8a; font-weight: 900; font-size: 32px; margin-bottom: 10px; }
+    .badge-paid { background-color: #d4edda; color: #155724; padding: 4px 10px; border-radius: 10px; font-weight: bold; font-size: 11px; }
+    .badge-debt { background-color: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 10px; font-weight: bold; font-size: 11px; }
     .state-header {
         background: linear-gradient(90deg, #1e3a8a 0%, #0080ff 100%);
-        color: white; padding: 12px 20px; border-radius: 12px; margin: 20px 0; font-weight: 700;
+        color: white; padding: 10px 18px; border-radius: 10px; margin: 15px 0; font-weight: 700;
     }
-    .stButton>button { border-radius: 12px; height: 3em; font-weight: 700; text-transform: uppercase; transition: 0.3s; }
-    .stButton>button:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .progress-label { font-size: 0.8em; color: #1e3a8a; font-weight: 600; margin-bottom: 5px; }
+    .btn-eliminar button { background-color: #ff4b4b !important; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -84,7 +82,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             f_cli = st.text_input("Nombre del Cliente")
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
-            # Integración de modalidades
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
             if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
@@ -96,7 +93,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                     }
                     st.session_state.inventario.append(nuevo)
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                    st.success(f"✅ Guía {f_id} registrada con éxito.")
+                    st.success(f"✅ Guía {f_id} registrada.")
 
     with t_val:
         st.subheader("Báscula de Almacén")
@@ -110,34 +107,24 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 paq['Peso_Almacen'] = peso_real
                 paq['Validado'] = True
                 paq['Monto_USD'] = peso_real * PRECIO_POR_KG
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                if abs(peso_real - paq['Peso_Mensajero']) > 0.5:
-                    st.error(f"⚠️ ¡ALERTA! Diferencia crítica de peso detectada.")
-                st.success("✅ Peso validado.")
-                st.rerun()
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Peso validado."); st.rerun()
         else: st.info("Sin pendientes.")
 
     with t_cob:
-        st.subheader("Gestión de Cobros y Abonos")
+        st.subheader("Gestión de Cobros")
         if st.session_state.inventario:
-            # Mostramos los pendientes en formato tarjeta estético
             pendientes_pago = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
-            if not pendientes_pago: st.success("¡Todos los cobros están al día!")
             for p in pendientes_pago:
-                with st.expander(f"💰 {p['ID_Barra']} - {p['Cliente']} ({p.get('Modalidad', 'P. Único')})"):
-                    col1, col2 = st.columns(2)
+                with st.expander(f"💰 {p['ID_Barra']} - {p['Cliente']}"):
                     total = p['Monto_USD']
                     abonado = p.get('Abonado', 0.0)
-                    falta = total - abonado
-                    col1.metric("Total Factura", f"${total:.2f}")
-                    col2.metric("Resta por Pagar", f"${falta:.2f}", delta=f"-{abonado}", delta_color="normal")
-                    
-                    nuevo_abono = st.number_input(f"Monto a abonar ($)", min_value=0.0, max_value=float(falta), key=f"ab_{p['ID_Barra']}")
-                    if st.button(f"Confirmar Pago {p['ID_Barra']}", key=f"btn_{p['ID_Barra']}"):
-                        p['Abonado'] = abonado + nuevo_abono
+                    resta = total - abonado
+                    st.write(f"Modalidad: **{p.get('Modalidad')}** | Resta: **${resta:.2f}**")
+                    monto_abono = st.number_input(f"Abonar a {p['ID_Barra']}", min_value=0.0, max_value=float(resta), key=f"c_{p['ID_Barra']}")
+                    if st.button(f"Registrar Pago", key=f"b_{p['ID_Barra']}"):
+                        p['Abonado'] = abonado + monto_abono
                         if p['Abonado'] >= p['Monto_USD']: p['Pago'] = 'PAGADO'
-                        guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                        st.rerun()
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_est:
         st.subheader("Logística de Envío")
@@ -149,21 +136,67 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
+    # E. AUDITORÍA / PAPELERA (RESTAURADO COMPLETO)
     with t_aud:
-        st.subheader("Auditoría de Datos")
-        df_aud = pd.DataFrame(st.session_state.inventario)
-        st.dataframe(df_aud, use_container_width=True)
+        col_a1, col_a2 = st.columns([3, 1])
+        with col_a1: st.subheader("Auditoría y Edición")
+        with col_a2: ver_p = st.checkbox("🗑️ Papelera")
+        
+        if ver_p:
+            if st.session_state.papelera:
+                st.dataframe(pd.DataFrame(st.session_state.papelera), use_container_width=True)
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("Papelera vacía.")
+        else:
+            busq = st.text_input("🔍 Buscar por Guía:")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if busq: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq, case=False)]
+            st.dataframe(df_aud, use_container_width=True)
+            
+            st.write("---")
+            guia_ed = st.selectbox("Editar/Eliminar ID:", [p["ID_Barra"] for p in st.session_state.inventario])
+            paq_ed = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed), None)
+            if paq_ed:
+                c1, c2, c3 = st.columns(3)
+                with c1: new_cli = st.text_input("Cliente", value=paq_ed['Cliente'])
+                with c2: new_pes = st.number_input("Peso Almacén", value=float(paq_ed['Peso_Almacen']))
+                with c3: new_pago = st.selectbox("Estado Pago", ["PENDIENTE", "PAGADO"], index=0 if paq_ed['Pago']=="PENDIENTE" else 1)
+                
+                b_save, b_del = st.columns(2)
+                with b_save:
+                    if st.button("💾 Guardar Cambios"):
+                        paq_ed.update({'Cliente': new_cli, 'Peso_Almacen': new_pes, 'Pago': new_pago, 'Monto_USD': new_pes*PRECIO_POR_KG})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                with b_del:
+                    st.markdown('<div class="btn-eliminar">', unsafe_allow_html=True)
+                    if st.button("🗑️ Enviar a Papelera"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
+    # F. RESUMEN (CORREGIDO AL FORMATO ORIGINAL)
     with t_res:
-        st.subheader("Resumen de Operaciones")
+        st.subheader("Resumen General de Operaciones")
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
             m1, m2, m3 = st.columns(3)
-            m1.metric("Kg Validados", f"{df_res['Peso_Almacen'].sum():.1f}")
-            m2.metric("Paquetes Activos", len(df_res))
-            m3.metric("Recaudación", f"${df_res['Abonado'].sum():.2f}")
+            m1.metric("Kg Totales", f"{df_res['Peso_Almacen'].sum():.1f}")
+            m2.metric("Paquetes", len(df_res))
+            m3.metric("Caja (Abonos)", f"${df_res['Abonado'].sum():.2f}")
+            
+            for est in ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"]:
+                df_f = df_res[df_res['Estado'] == est]
+                st.markdown(f'<div class="state-header">📦 {est} ({len(df_f)})</div>', unsafe_allow_html=True)
+                if not df_f.empty:
+                    st.table(df_f[['ID_Barra', 'Cliente', 'Peso_Almacen', 'Pago', 'Monto_USD', 'Abonado']])
 
-# --- 5. PANEL DEL CLIENTE (ESTÉTICA MEJORADA) ---
+# --- 5. PANEL DEL CLIENTE (VISTA COMPACTA Y DISTINGUIBLE) ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -171,43 +204,38 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u_mail]
     
     if not mis_p:
-        st.markdown('<div class="p-card">No tienes paquetes registrados todavía.</div>', unsafe_allow_html=True)
+        st.info("No hay paquetes asociados.")
     else:
         st.subheader("📋 Mis Envíos")
-        for p in mis_p:
-            total = p['Monto_USD']
-            abonado = p.get('Abonado', 0.0)
-            pago_s = p.get('Pago', 'PENDIENTE')
-            
-            # Cálculo del progreso
-            perc = (abonado / total * 100) if total > 0 else 0
-            badge = "badge-paid" if pago_s == "PAGADO" else "badge-debt"
-            txt = "💰 PAGADO" if pago_s == "PAGADO" else "⚠️ PENDIENTE"
-            
-            st.markdown(f"""
-                <div class="p-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="margin:0; color:#1e3a8a;">Guía: {p['ID_Barra']}</h3>
-                            <p style="margin:2px 0; font-size:0.9em;">Estatus: <b>{p['Estado']}</b></p>
-                            <p style="margin:0; font-size:0.8em; color:gray;">Modalidad: {p.get('Modalidad', 'Pago Único')}</p>
+        # Usamos columnas para que las tarjetas no ocupen tanto espacio vertical
+        col_paq1, col_paq2 = st.columns(2)
+        for i, p in enumerate(mis_p):
+            with (col_paq1 if i % 2 == 0 else col_paq2):
+                total = p['Monto_USD']
+                abonado = p.get('Abonado', 0.0)
+                pago_s = p.get('Pago', 'PENDIENTE')
+                badge = "badge-paid" if pago_s == "PAGADO" else "badge-debt"
+                
+                st.markdown(f"""
+                    <div class="p-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight:bold; color:#1e3a8a;">#{p['ID_Barra']}</span>
+                            <span class="{badge}">{pago_s}</span>
                         </div>
-                        <div class="{badge}">{txt}</div>
+                        <div style="font-size: 0.85em; margin: 8px 0;">
+                            📍 <b>{p['Estado']}</b><br>
+                            ⚖️ {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} Kg | 💳 {p.get('Modalidad')}
+                        </div>
+                """, unsafe_allow_html=True)
+                # Barra de progreso compacta
+                st.progress(abonado/total if total > 0 else 0)
+                st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-top: 5px;">
+                            <span>Abonado: <b>${abonado:.2f}</b></span>
+                            <span style="color:red;">Resta: <b>${(total-abonado):.2f}</b></span>
+                        </div>
                     </div>
-                    <div style="margin-top:20px;">
-                        <div class="progress-label">Progreso de Pago: {int(perc)}%</div>
-            """, unsafe_allow_html=True)
-            
-            st.progress(abonado/total if total > 0 else 0)
-            
-            st.markdown(f"""
-                    <div style="display: flex; justify-content: space-around; margin-top:15px; border-top:1px solid #eee; padding-top:10px; text-align:center;">
-                        <div><small style="color:gray;">Total</small><br><b>${total:.2f}</b></div>
-                        <div><small style="color:gray;">Abonado</small><br><b style="color:green;">${abonado:.2f}</b></div>
-                        <div><small style="color:gray;">Resta</small><br><b style="color:red;">${(total-abonado):.2f}</b></div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
 # --- 6. ACCESO ---
 else:
