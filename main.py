@@ -3,19 +3,18 @@ import pandas as pd
 import os
 from datetime import datetime
 
-# --- CONFIGURACIÓN E IDENTIDAD ---
-st.set_page_config(page_title="IACargo.io | Sistema Logístico", layout="wide", page_icon="🚀")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="IACargo.io | Dashboard", layout="wide", page_icon="🚀")
 
-# Intentar cargar el logo (Asegúrate de tener logo.png en GitHub)
-with st.sidebar:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=200)
-    else:
-        st.title("🚀 IACargo.io")
-    st.write("---")
-    st.caption("“La existencia es un milagro”")
+# --- ESTILO PERSONALIZADO ---
+st.markdown("""
+    <style>
+    .main { background-color: #f5f7f9; }
+    stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- MOTOR DE DATOS (Tu lógica original) ---
+# --- MOTOR DE DATOS ---
 PRECIO_POR_KG = 5.0
 ARCHIVO_DB = "inventario_logistica.csv"
 
@@ -28,117 +27,149 @@ def guardar_datos(datos):
     df = pd.DataFrame(datos)
     df.to_csv(ARCHIVO_DB, index=False)
 
-# Inicializar inventario en la sesión de Streamlit
 if 'inventario' not in st.session_state:
     st.session_state.inventario = cargar_datos()
 
-# --- MENÚ DE NAVEGACIÓN ---
-menu = ["🏠 Inicio", "📦 Rastreo (Clientes)", "🔐 Panel Administrativo"]
-choice = st.sidebar.selectbox("Seleccione Portal", menu)
+# --- SIDEBAR CON LOGO ---
+with st.sidebar:
+    # Intenta cargar el logo que ya tienes arriba
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    else:
+        st.title("🚀 IACargo.io")
+    
+    st.write("---")
+    st.subheader("Navegación")
+    rol = st.radio("Seleccione su Rol:", ["🌐 Portal Cliente", "🔐 Administración"])
+    st.write("---")
+    st.caption("“La existencia es un milagro”")
 
-# --- PORTAL DE CLIENTE (RASTREO) ---
-if choice == "📦 Rastreo (Clientes)":
-    st.header("🔍 Rastreo de Paquete")
-    id_buscar = st.text_input("Ingrese su ID de paquete:")
-    if st.button("Buscar"):
-        encontrado = False
-        for p in st.session_state.inventario:
-            if str(p["ID_Barra"]) == id_buscar:
-                st.success(f"¡Paquete Localizado!")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**Cliente:** {p['Cliente']}")
-                    st.write(f"**Estado:** {p['Estado']}")
-                    st.write(f"**Descripción:** {p['Descripcion']}")
-                with col2:
-                    st.write(f"**Monto:** ${p['Monto_USD']:.2f}")
-                    st.write(f"**Estatus Pago:** {p['Pago']}")
-                    st.write(f"**Fecha Registro:** {p['Fecha_Registro']}")
-                encontrado = True
-        if not encontrado:
-            st.error("ID no encontrado. Verifique sus datos.")
+# ==========================================
+# INTERFAZ 1: PORTAL CLIENTE (RASTREO)
+# ==========================================
+if rol == "🌐 Portal Cliente":
+    st.title("📦 Seguimiento de Envíos")
+    st.markdown("Consulta el estado de tu carga en tiempo real.")
+    
+    with st.container():
+        col_busqueda, _ = st.columns([2, 1])
+        id_buscar = col_busqueda.text_input("Introduce tu ID de Tracking:", placeholder="Ej: IAC-12345")
+        
+        if st.button("Rastrear Paquete"):
+            paquete = next((p for p in st.session_state.inventario if str(p["ID_Barra"]) == id_buscar), None)
+            
+            if paquete:
+                st.success(f"Paquete Encontrado")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Estado Actual", paquete['Estado'])
+                c2.metric("Monto a Pagar", f"${paquete['Monto_USD']:.2f}")
+                c3.metric("Pago", paquete['Pago'])
+                
+                with st.expander("Ver Detalles Completos"):
+                    st.write(f"**Cliente:** {paquete['Cliente']}")
+                    st.write(f"**Descripción:** {paquete['Descripcion']}")
+                    st.write(f"**Fecha de Registro:** {paquete['Fecha_Registro']}")
+            else:
+                st.error("No se encontró ningún paquete con ese ID. Por favor, verifique.")
 
-# --- PANEL ADMINISTRATIVO ---
-elif choice == "🔐 Panel Administrativo":
-    st.header("⚙️ Gestión de Operaciones")
+# ==========================================
+# INTERFAZ 2: PANEL ADMINISTRATIVO (ADMIN)
+# ==========================================
+else:
+    st.title("⚙️ Gestión de Operaciones IACargo")
     
     if 'admin_auth' not in st.session_state:
         st.session_state.admin_auth = False
 
     if not st.session_state.admin_auth:
-        user = st.text_input("Usuario")
-        pw = st.text_input("Contraseña", type="password")
-        if st.button("Acceder"):
+        # Login de seguridad
+        col_l, _ = st.columns([1, 2])
+        user = col_l.text_input("Usuario Admin")
+        pw = col_l.text_input("Contraseña", type="password")
+        if col_l.button("Acceder al Sistema"):
             if user == "admin" and pw == "admin123":
                 st.session_state.admin_auth = True
                 st.rerun()
             else:
-                st.error("Credenciales incorrectas")
+                st.error("Credenciales Incorrectas")
     else:
-        if st.sidebar.button("🔒 Cerrar Sesión"):
+        if st.sidebar.button("🔒 Cerrar Sesión Admin"):
             st.session_state.admin_auth = False
             st.rerun()
 
-        tab1, tab2, tab3, tab4 = st.tabs(["📦 Registro", "⚖️ Pesaje", "💰 Cobros", "📋 Reporte"])
+        # Menú de acciones Admin organizado por pestañas
+        tab_reg, tab_pes, tab_cob, tab_aud = st.tabs([
+            "📝 Registro Nuevo", "⚖️ Validación de Peso", "💰 Gestión de Cobros", "📊 Auditoría"
+        ])
 
-        with tab1:
-            st.subheader("Nuevo Registro")
-            c1, c2 = st.columns(2)
-            id_p = c1.text_input("ID Único")
-            cli = c1.text_input("Cliente")
-            cor = c2.text_input("Correo")
-            des = c2.text_area("Contenido")
-            peso = st.number_input("Peso en báscula (kg)", min_value=0.0)
+        # --- TAREA: REGISTRO ---
+        with tab_reg:
+            st.subheader("Entrada de Mercancía")
+            with st.form("form_registro"):
+                c1, c2 = st.columns(2)
+                id_p = c1.text_input("ID del Paquete")
+                cli = c1.text_input("Nombre del Cliente")
+                cor = c2.text_input("Correo Electrónico")
+                des = c2.text_area("Descripción de Contenido")
+                peso_origen = st.number_input("Peso Inicial (Kg)", min_value=0.0)
+                
+                if st.form_submit_button("Guardar y Generar Cotización"):
+                    monto = peso_origen * PRECIO_POR_KG
+                    nuevo = {
+                        "ID_Barra": id_p, "Cliente": cli, "Correo": cor,
+                        "Descripcion": des, "Peso_Origen": peso_origen, "Peso_Almacen": 0.0,
+                        "Monto_USD": monto, "Estado": "Recogido / En Espera", "Pago": "PENDIENTE",
+                        "Fecha_Registro": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    st.session_state.inventario.append(nuevo)
+                    guardar_datos(st.session_state.inventario)
+                    st.success(f"✅ Registrado. Cotización: ${monto:.2f} USD")
+
+        # --- TAREA: PESAJE REAL ---
+        with tab_pes:
+            st.subheader("Báscula de Almacén")
+            ids_pendientes = [p["ID_Barra"] for p in st.session_state.inventario if p["Peso_Almacen"] == 0.0]
             
-            if st.button("Registrar y Cotizar"):
-                monto = peso * PRECIO_POR_KG
-                nuevo = {
-                    "ID_Barra": id_p, "Cliente": cli, "Correo": cor,
-                    "Descripcion": des, "Peso_Origen": peso, "Peso_Almacen": 0.0,
-                    "Monto_USD": monto, "Estado": "Recogido en casa", "Pago": "PENDIENTE",
-                    "Fecha_Registro": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-                st.session_state.inventario.append(nuevo)
-                guardar_datos(st.session_state.inventario)
-                st.success(f"✅ Registrado. Cotización: ${monto}")
-
-        with tab2:
-            st.subheader("Validación de Peso")
-            id_v = st.selectbox("Paquete a pesar", [p["ID_Barra"] for p in st.session_state.inventario])
-            p_real = st.number_input("Peso en almacén (kg)", min_value=0.0)
-            if st.button("Validar Diferencia"):
-                for p in st.session_state.inventario:
-                    if p["ID_Barra"] == id_v:
-                        p["Peso_Almacen"] = p_real
-                        diff = abs(p_real - p["Peso_Origen"])
-                        if diff > (p["Peso_Origen"] * 0.05):
-                            p["Estado"] = "🔴 RETENIDO: DISCREPANCIA"
-                            st.error(f"Alerta: Diferencia de {diff:.2f} kg detectada.")
-                        else:
-                            p["Estado"] = "🟢 VERIFICADO"
-                            st.success("Peso dentro del rango permitido.")
-                        guardar_datos(st.session_state.inventario)
-
-        with tab3:
-            st.subheader("Gestión de Pagos")
-            id_pago = st.selectbox("Paquete para cobrar", [p["ID_Barra"] for p in st.session_state.inventario if p["Pago"] == "PENDIENTE"])
-            if st.button("Confirmar Pago"):
-                for p in st.session_state.inventario:
-                    if p["ID_Barra"] == id_pago:
-                        p["Pago"] = "PAGADO"
-                        st.balloons()
-                guardar_datos(st.session_state.inventario)
-
-        with tab4:
-            st.subheader("Reporte de Auditoría")
-            if st.session_state.inventario:
-                st.dataframe(pd.DataFrame(st.session_state.inventario))
+            if ids_pendientes:
+                id_v = st.selectbox("Seleccione ID para Validar:", ids_pendientes)
+                peso_almacen = st.number_input("Peso Real detectado (Kg):", min_value=0.0)
+                
+                if st.button("Confirmar Pesaje"):
+                    for p in st.session_state.inventario:
+                        if p["ID_Barra"] == id_v:
+                            p["Peso_Almacen"] = peso_almacen
+                            diff = abs(peso_almacen - p["Peso_Origen"])
+                            if diff > (p["Peso_Origen"] * 0.05):
+                                p["Estado"] = "🔴 RETENIDO: DISCREPANCIA"
+                                st.warning(f"Diferencia de {diff:.2f} Kg detectada. Paquete bloqueado para revisión.")
+                            else:
+                                p["Estado"] = "🟢 LISTO PARA ENVÍO"
+                                st.success("Peso verificado con éxito.")
+                            guardar_datos(st.session_state.inventario)
             else:
-                st.write("No hay datos.")
+                st.info("No hay paquetes pendientes por pesar.")
 
-# --- PANTALLA DE INICIO ---
-else:
-    st.markdown("<h1 style='text-align: center;'>Bienvenido a IACargo.io</h1>", unsafe_allow_html=True)
-    st.write("---")
-    st.info("Utilice el menú lateral para acceder al portal de clientes o administración.")
-    st.image("https://images.unsplash.com/photo-1566232392379-afd9298e6a46?auto=format&fit=crop&q=80&w=1000")
+        # --- TAREA: COBROS ---
+        with tab_cob:
+            st.subheader("Caja y Facturación")
+            pendientes_pago = [p for p in st.session_state.inventario if p["Pago"] == "PENDIENTE"]
+            if pendientes_pago:
+                for p in pendientes_pago:
+                    col_p1, col_p2 = st.columns([3, 1])
+                    col_p1.write(f"**ID:** {p['ID_Barra']} | **Cliente:** {p['Cliente']} | **Monto:** ${p['Monto_USD']:.2f}")
+                    if col_p2.button(f"Confirmar Pago", key=p['ID_Barra']):
+                        p["Pago"] = "PAGADO"
+                        guardar_datos(st.session_state.inventario)
+                        st.rerun()
+            else:
+                st.success("No hay pagos pendientes.")
+
+        # --- TAREA: AUDITORÍA ---
+        with tab_aud:
+            st.subheader("Inventario General")
+            if st.session_state.inventario:
+                df = pd.DataFrame(st.session_state.inventario)
+                st.dataframe(df, use_container_width=True)
+                st.download_button("Descargar Reporte Excel/CSV", df.to_csv(), "reporte_iacargo.csv")
+            else:
+                st.write("Sin datos registrados.")
