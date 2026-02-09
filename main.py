@@ -54,22 +54,34 @@ if 'inventario' not in st.session_state: st.session_state.inventario = cargar_da
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
 if 'usuario_identificado' not in st.session_state: st.session_state.usuario_identificado = None
 
-# --- 3. BARRA LATERAL ---
+# --- 3. BARRA LATERAL UNIFICADA (SIN DUPLICADOS) ---
 with st.sidebar:
-    st.title("🚀 IACargo.io")
+    # Espacio para el LOGO
+    if os.path.exists("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    else:
+        st.title("🚀 IACargo.io")
+    
     st.write("---")
+    
+    # Manejo de Sesión
     if st.session_state.usuario_identificado:
-        st.success(f"Sesión: {st.session_state.usuario_identificado.get('nombre', 'Usuario')}")
+        st.success(f"Socio: {st.session_state.usuario_identificado.get('nombre', 'Usuario')}")
+        rol_actual = st.session_state.usuario_identificado.get('rol')
         if st.button("Cerrar Sesión", use_container_width=True):
             st.session_state.usuario_identificado = None
             st.rerun()
     else:
-        rol_vista = st.radio("Sección:", ["🔑 Portal Clientes", "🔐 Administración"])
+        # ÚNICO LUGAR DONDE EXISTE EL RADIO (Evita el DuplicateElementId)
+        rol_vista = st.radio("Navegación:", ["🔑 Portal Clientes", "🔐 Administración"])
+    
     st.write("---")
     st.caption("“La existencia es un milagro”")
     st.caption("“No eres herramienta, eres evolución”")
 
-# --- 4. INTERFAZ DE ADMINISTRADOR ---
+# --- 4. LÓGICA DE PANTALLAS ---
+
+# A. SI ESTÁ IDENTIFICADO COMO ADMIN
 if st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "admin":
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
@@ -173,7 +185,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 if not df_f.empty:
                     st.dataframe(df_f[['ID_Barra', 'Cliente', 'Correo', 'Peso_Almacen', 'Pago']], hide_index=True, use_container_width=True)
 
-# --- 5. PANEL DEL CLIENTE ---
+# B. SI ESTÁ IDENTIFICADO COMO CLIENTE
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -189,7 +201,6 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
     
     if mis_p:
         for p in mis_p:
-            # FIX DE FECHA: Convertimos a string para evitar el error de recorte
             fecha_p = str(p.get('Fecha_Registro', 'N/A'))[:10]
             with st.container():
                 st.markdown(f"""
@@ -201,25 +212,32 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                 """, unsafe_allow_html=True)
     else: st.info("Sin paquetes registrados.")
 
-# --- 6. ACCESO ---
+# C. SI NO ESTÁ IDENTIFICADO (PANTALLA DE ACCESO)
 else:
-    rol_vista = st.sidebar.radio("Sección:", ["🔑 Portal Clientes", "🔐 Administración"])
     if rol_vista == "🔑 Portal Clientes":
         t_l, t_s = st.tabs(["Ingresar", "Registro"])
         with t_s:
             with st.form("signup"):
                 n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                 if st.form_submit_button("Crear Cuenta"):
-                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Registrado.")
+                    if n and e and p:
+                        st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                        guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS)
+                        st.success("Registrado correctamente.")
         with t_l:
             le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
             if st.button("Iniciar Sesión"):
                 usr = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                if usr: st.session_state.usuario_identificado = usr; st.rerun()
+                if usr:
+                    st.session_state.usuario_identificado = usr
+                    st.rerun()
                 else: st.error("Credenciales incorrectas.")
     else:
-        ad_u = st.text_input("Usuario Admin"); ad_p = st.text_input("Pass Admin", type="password")
-        if st.button("Acceso Admin"):
+        st.subheader("Acceso Administrativo")
+        ad_u = st.text_input("Usuario Admin")
+        ad_p = st.text_input("Pass Admin", type="password")
+        if st.button("Entrar como Admin"):
             if ad_u == "admin" and ad_p == "admin123":
-                st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
+                st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}
+                st.rerun()
+            else: st.error("No autorizado.")
