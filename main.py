@@ -54,37 +54,28 @@ if 'inventario' not in st.session_state: st.session_state.inventario = cargar_da
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
 if 'usuario_identificado' not in st.session_state: st.session_state.usuario_identificado = None
 
-# --- 3. BARRA LATERAL UNIFICADA (SIN DUPLICADOS) ---
+# --- 3. BARRA LATERAL UNIFICADA ---
 with st.sidebar:
-    # Espacio para el LOGO
     if os.path.exists("logo.png"):
         st.image("logo.png", use_container_width=True)
     else:
         st.title("🚀 IACargo.io")
-    
     st.write("---")
-    
-    # Manejo de Sesión
     if st.session_state.usuario_identificado:
         st.success(f"Socio: {st.session_state.usuario_identificado.get('nombre', 'Usuario')}")
-        rol_actual = st.session_state.usuario_identificado.get('rol')
         if st.button("Cerrar Sesión", use_container_width=True):
             st.session_state.usuario_identificado = None
             st.rerun()
     else:
-        # ÚNICO LUGAR DONDE EXISTE EL RADIO (Evita el DuplicateElementId)
         rol_vista = st.radio("Navegación:", ["🔑 Portal Clientes", "🔐 Administración"])
-    
     st.write("---")
     st.caption("“La existencia es un milagro”")
     st.caption("“No eres herramienta, eres evolución”")
 
-# --- 4. LÓGICA DE PANTALLAS ---
-
-# A. SI ESTÁ IDENTIFICADO COMO ADMIN
+# --- 4. INTERFAZ DE ADMINISTRADOR ---
 if st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "admin":
     st.title("⚙️ Consola de Control Logístico")
-    tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
+    tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res = tabs
 
     with t_reg:
@@ -153,7 +144,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
     with t_est:
         st.subheader("Actualizar Estados")
         if st.session_state.inventario:
-            sel = st.selectbox("ID de Guía:", [p["ID_Barra"] for p in st.session_state.inventario])
+            sel = st.selectbox("ID de Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="est_sel")
             n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"])
             if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
@@ -161,13 +152,46 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_aud:
-        st.subheader("Auditoría y Búsqueda")
-        busq_aud = st.text_input("🔍 Buscar paquete por ID de Guía:")
+        st.subheader("Historial y Corrección de Errores")
+        busq_aud = st.text_input("🔍 Buscar guía para auditar o editar:", key="aud_search")
+        
         if st.session_state.inventario:
+            # Mostramos la tabla general filtrada
             df_aud = pd.DataFrame(st.session_state.inventario)
             if busq_aud:
                 df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False)]
             st.dataframe(df_aud, use_container_width=True)
+            
+            st.write("---")
+            st.markdown("### 🛠️ Panel de Edición Rápida")
+            # Selección de paquete a editar
+            guia_a_editar = st.selectbox("Seleccione el ID de Guía que desea CORREGIR:", [p["ID_Barra"] for p in st.session_state.inventario], key="edit_box")
+            paq_edit = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_a_editar), None)
+            
+            if paq_edit:
+                col_e1, col_e2 = st.columns(2)
+                with col_e1:
+                    new_id = st.text_input("Editar ID/Tracking", value=paq_edit['ID_Barra'])
+                    new_cli = st.text_input("Editar Cliente", value=paq_edit['Cliente'])
+                    new_cor = st.text_input("Editar Correo", value=paq_edit['Correo'])
+                with col_e2:
+                    new_pes_m = st.number_input("Corregir Peso Mensajero (Kg)", value=float(paq_edit.get('Peso_Mensajero', 0.0)))
+                    new_pes_a = st.number_input("Corregir Peso Almacén (Kg)", value=float(paq_edit.get('Peso_Almacen', 0.0)))
+                    new_pago = st.selectbox("Estado de Pago", ["PENDIENTE", "PAGADO"], index=0 if paq_edit['Pago'] == "PENDIENTE" else 1)
+                
+                if st.button("💾 Guardar Cambios en Auditoría"):
+                    paq_edit['ID_Barra'] = new_id
+                    paq_edit['Cliente'] = new_cli
+                    paq_edit['Correo'] = new_cor.lower().strip()
+                    paq_edit['Peso_Mensajero'] = new_pes_m
+                    paq_edit['Peso_Almacen'] = new_pes_a
+                    paq_edit['Pago'] = new_pago
+                    # Recalcular monto por si cambió el peso
+                    paq_edit['Monto_USD'] = new_pes_a * PRECIO_POR_KG if new_pes_a > 0 else new_pes_m * PRECIO_POR_KG
+                    
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                    st.success(f"✅ Paquete {new_id} actualizado correctamente.")
+                    st.rerun()
 
     with t_res:
         st.subheader("Análisis de Operación por Fase")
@@ -185,7 +209,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 if not df_f.empty:
                     st.dataframe(df_f[['ID_Barra', 'Cliente', 'Correo', 'Peso_Almacen', 'Pago']], hide_index=True, use_container_width=True)
 
-# B. SI ESTÁ IDENTIFICADO COMO CLIENTE
+# --- 5. PANEL DEL CLIENTE ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -212,7 +236,7 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                 """, unsafe_allow_html=True)
     else: st.info("Sin paquetes registrados.")
 
-# C. SI NO ESTÁ IDENTIFICADO (PANTALLA DE ACCESO)
+# --- 6. ACCESO ---
 else:
     if rol_vista == "🔑 Portal Clientes":
         t_l, t_s = st.tabs(["Ingresar", "Registro"])
