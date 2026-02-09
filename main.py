@@ -229,7 +229,7 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
     search = c_der.text_input("🔍 Buscar por Número de Guía")
     
     mis_p = [p for p in st.session_state.inventario if p.get('Correo', '').lower() == u['correo'].lower()]
-    if search: mis_p = [p for p in mis_p if search.lower() in p['ID_Barra'].lower()]
+    if search: mis_p = [p for p in mis_p if p.get('ID_Barra') and search.lower() in str(p['ID_Barra']).lower()]
     
     if mis_p:
         for p in mis_p:
