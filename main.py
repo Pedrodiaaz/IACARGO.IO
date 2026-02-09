@@ -16,7 +16,8 @@ with st.sidebar:
     
     st.write("---")
     st.title("Menú Principal")
-    menu = ["🏠 Inicio", "📦 Rastreo de Carga", "👥 Gestión de Clientes", "🚢 Inventario/Flota", "🔐 Administración"]
+    # Agregamos "Validación de Documentos" al menú
+    menu = ["🏠 Inicio", "📦 Rastreo de Carga", "📄 Validación de Documentos", "👥 Gestión de Clientes", "🚢 Inventario/Flota", "🔐 Administración"]
     choice = st.selectbox("Navegación", menu)
     st.write("---")
     st.caption("Evolución en Logística v1.0")
@@ -35,64 +36,50 @@ if choice == "🏠 Inicio":
         st.metric("Nuevas Solicitudes", "7", "-1")
     with col3:
         st.metric("Entregados hoy", "12", "+5")
-    
-    st.write("### Operaciones Recientes")
-    st.info("Utilice el panel lateral para navegar entre las funciones del sistema.")
 
 elif choice == "📦 Rastreo de Carga":
     st.header("Seguimiento en Tiempo Real")
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        guia = st.text_input("Introduce el Número de Guía o Tracking ID")
-    with col_b:
-        st.write("##")
-        boton = st.button("Rastrear Mercancía")
-        
-    if boton and guia:
-        st.success(f"Buscando información para la guía: {guia}")
-        st.progress(65)
-        st.markdown("""
-        * **Estado:** En tránsito
-        * **Ubicación:** Aduana de destino (Puerto Cabello / Maiquetía)
-        * **ETA Estimado:** 48 horas
-        """)
+    guia = st.text_input("Introduce el Número de Guía o Tracking ID")
+    if st.button("Rastrear Mercancía"):
+        if guia:
+            st.success(f"Buscando información para la guía: {guia}")
+            st.info("📍 **Estado:** En tránsito | **Ubicación:** Hub Internacional")
+        else:
+            st.warning("Por favor, introduce un número válido.")
+
+elif choice == "📄 Validación de Documentos":
+    st.header("Centro de Validación Documental")
+    st.write("Cargue los documentos para su verificación previa (Facturas, Packing List, BL).")
+    
+    uploaded_file = st.file_uploader("Seleccione el archivo (PDF, JPG, PNG)", type=["pdf", "jpg", "png"])
+    tipo_doc = st.selectbox("Tipo de documento", ["Factura Comercial", "Packing List", "Certificado de Origen", "Otro"])
+    
+    if st.button("Enviar para Validación"):
+        if uploaded_file is not None:
+            st.success(f"El documento '{tipo_doc}' ha sido recibido. Nuestro equipo lo validará en breve.")
+        else:
+            st.error("Por favor, suba un archivo antes de enviar.")
 
 elif choice == "👥 Gestión de Clientes":
     st.header("Base de Datos de Clientes")
-    with st.expander("➕ Registrar Nuevo Cliente"):
-        nombre = st.text_input("Nombre de la Empresa / Particular")
-        correo = st.text_input("Correo Electrónico")
-        if st.button("Guardar en Sistema"):
-            st.success("Cliente registrado con éxito.")
-
-    # Tabla de ejemplo de lo que será tu base de datos
     df_clientes = pd.DataFrame({
         'Cliente': ['Empresa A', 'Distribuidora B', 'Exportadora C'],
         'País': ['Venezuela', 'Panamá', 'España'],
-        'Cargas Mes': [15, 8, 22],
         'Estado': ['Activo', 'Pendiente', 'Activo']
     })
     st.dataframe(df_clientes, use_container_width=True)
 
 elif choice == "🚢 Inventario/Flota":
-    st.header("Control de Unidades y Almacén")
-    tab1, tab2, tab3 = st.tabs(["✈️ Aéreo", "🚢 Marítimo", "📦 Almacén"])
-    with tab1:
-        st.write("Disponibilidad de carga aérea inmediata.")
-    with tab2:
-        st.write("Seguimiento de contenedores en ruta transatlántica.")
-    with tab3:
-        st.write("Espacio disponible en depósitos.")
+    st.header("Control de Unidades")
+    st.write("Gestión de contenedores y espacios aéreos disponibles.")
 
 elif choice == "🔐 Administración":
     st.header("Acceso de Seguridad")
-    col_c, col_d = st.columns(2)
-    with col_c:
-        usuario = st.text_input("Usuario")
-        clave = st.text_input("Contraseña", type="password")
-        if st.button("Acceder"):
-            if usuario == "admin" and clave == "1234":
-                st.success("Bienvenido al núcleo del sistema.")
-                st.balloons()
-            else:
-                st.error("Credenciales no válidas.")
+    usuario = st.text_input("Usuario")
+    clave = st.text_input("Contraseña", type="password")
+    if st.button("Acceder"):
+        if usuario == "admin" and clave == "1234":
+            st.success("Acceso concedido.")
+            st.balloons()
+        else:
+            st.error("Credenciales incorrectas.")
