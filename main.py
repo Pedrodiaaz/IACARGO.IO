@@ -4,7 +4,7 @@ import os
 import hashlib
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL EVOLUCIONADA ---
+# --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL ---
 st.set_page_config(page_title="IACargo.io | Evolution System", layout="wide", page_icon="🚀")
 
 st.markdown("""
@@ -39,7 +39,6 @@ st.markdown("""
         color: white !important;
     }
 
-    /* ESTILO PARA LOS ENCABEZADOS DE ESTADO EN RESUMEN */
     .header-resumen {
         background: linear-gradient(90deg, #2563eb, #1e40af);
         color: white !important;
@@ -73,41 +72,35 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         font-weight: 800; font-size: 38px; margin-bottom: 10px; 
     }
-
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
 
-    /* --- OPTIMIZACIÓN BOTÓN DE REGISTRO (FORMULARIO) --- */
-    /* Forzamos el color azul estático y letras blancas sin cambios al pasar el mouse */
+    /* BOTÓN DE REGISTRO ESTÁTICO DENTRO DEL FORMULARIO */
     div[data-testid="stForm"] button {
         background-color: #2563eb !important;
         background-image: none !important;
         color: white !important;
-        border-radius: 12px !important;
         border: 1px solid #60a5fa !important;
+        border-radius: 12px !important;
         font-weight: 700 !important;
-        text-transform: uppercase !important;
+        text-transform: uppercase;
         transition: none !important;
-        width: 100% !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
     }
-
-    div[data-testid="stForm"] button:hover, 
-    div[data-testid="stForm"] button:active, 
-    div[data-testid="stForm"] button:focus {
+    div[data-testid="stForm"] button:hover, div[data-testid="stForm"] button:active {
         background-color: #2563eb !important;
         color: white !important;
         border: 1px solid #60a5fa !important;
     }
 
-    /* Estilo para botones fuera de formularios (opcional, para mantener coherencia) */
+    /* BOTONES GENERALES */
     .stButton>button {
         border-radius: 12px !important;
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
         color: white !important;
         border: none !important;
         font-weight: 600 !important;
-        width: 100% !important;
+        transition: all 0.3s ease !important;
     }
-
     .btn-eliminar button { background: linear-gradient(90deg, #ef4444, #b91c1c) !important; }
     [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
@@ -166,7 +159,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
             f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"]) 
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            # ESTE ES EL BOTÓN QUE AHORA ES AZUL ESTÁTICO
             if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
                     nuevo = {
@@ -192,49 +184,54 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Peso validado."); st.rerun()
         else: st.info("Sin pendientes.")
 
-    # ... El resto del código de Cobros, Estados, Auditoría y Resumen se mantiene igual ...
-    # (Lo omito aquí para no saturar, pero el estilo del botón ya quedó blindado en el CSS arriba)
-    
-    with t_res:
-        st.subheader("📊 Resumen General de Operaciones")
-        if st.session_state.inventario:
-            df_res = pd.DataFrame(st.session_state.inventario)
-            busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search")
-            if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
-            
-            cant_almacen = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
-            cant_transito = len(df_res[df_res['Estado'] == "EN TRANSITO"])
-            cant_entregados = len(df_res[df_res['Estado'] == "ENTREGADO"])
-            
-            m1, m2, m3 = st.columns(3)
-            m1.metric("📦 En Almacén", f"{cant_almacen} Paq.")
-            m2.metric("✈️ En Tránsito", f"{cant_transito} Paq.")
-            m3.metric("✅ Entregados", f"{cant_entregados} Paq.")
-            
-            st.write("---")
-            
-            estados_mapeo = {
-                "RECIBIDO ALMACEN PRINCIPAL": "📦 Mercancía en Almacén",
-                "EN TRANSITO": "✈️ Mercancía en Tránsito",
-                "ENTREGADO": "✅ Mercancía Entregada"
-            }
+    with t_cob:
+        st.subheader("Gestión de Cobros")
+        pendientes_pago = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
+        if pendientes_pago:
+            for p in pendientes_pago:
+                with st.expander(f"💰 {p['ID_Barra']} - {p['Cliente']}"):
+                    resta = p['Monto_USD'] - p.get('Abonado', 0.0)
+                    st.write(f"Modalidad: **{p.get('Modalidad')}** | Resta: **${resta:.2f}**")
+                    monto_abono = st.number_input(f"Abonar a {p['ID_Barra']}", 0.0, float(resta), key=f"c_{p['ID_Barra']}")
+                    if st.button(f"Registrar Pago", key=f"b_{p['ID_Barra']}"):
+                        p['Abonado'] = p.get('Abonado', 0.0) + monto_abono
+                        if p['Abonado'] >= p['Monto_USD']: p['Pago'] = 'PAGADO'
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+        else: st.info("No hay pagos pendientes.")
 
-            for est_key, est_label in estados_mapeo.items():
-                df_f = df_res[df_res['Estado'] == est_key].copy()
-                st.markdown(f'<div class="header-resumen">{est_label} ({len(df_f)})</div>', unsafe_allow_html=True)
-                
-                if not df_f.empty:
-                    for _, row in df_f.iterrows():
-                        icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
-                        st.markdown(f"""
-                            <div class="resumen-row">
-                                <div class="resumen-id">{icon} {row['ID_Barra']}</div>
-                                <div class="resumen-cliente">{row['Cliente']}</div>
-                                <div class="resumen-data">
-                                    {row['Peso_Almacen']:.1f} Kg | {row['Pago']} | ${row['Abonado']:.2f}
-                                </div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.caption("No hay registros en este estado.")
-# (Faltaría cerrar los bloques if/else del código original)
+    with t_est:
+        st.subheader("Logística de Envío")
+        if st.session_state.inventario:
+            sel_e = st.selectbox("ID de Guía:", [p["ID_Barra"] for p in st.session_state.inventario])
+            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"])
+            if st.button("Actualizar Estatus"):
+                for p in st.session_state.inventario:
+                    if p["ID_Barra"] == sel_e: p["Estado"] = n_st
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Estado actualizado."); st.rerun()
+        else: st.info("Inventario vacío.")
+
+    with t_aud:
+        col_a1, col_a2 = st.columns([3, 1])
+        with col_a1: st.subheader("Auditoría y Edición")
+        with col_a2: ver_p = st.checkbox("🗑️ Papelera")
+        if ver_p:
+            if st.session_state.papelera:
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("Papelera vacía.")
+        else:
+            busq = st.text_input("🔍 Buscar por Guía:")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if not df_aud.empty:
+                if busq: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq, case=False)]
+                st.dataframe(df_aud, use_container_width=True)
+                guia_ed = st.selectbox("Editar/Eliminar ID:", [p["ID_Barra"] for p in st.session_state.inventario])
+                paq_ed = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed), None)
+                if paq_ed:
+                    c1, c2, c3 = st.columns(3)
+                    with c1: new_cli = st.text_input("Cliente", value=paq_ed['Cliente'])
+                    with c2
