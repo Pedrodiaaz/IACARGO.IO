@@ -247,7 +247,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
             
-            # --- MÉTRICAS SUPERIORES ---
             m_alm = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
             m_tra = len(df_res[df_res['Estado'] == "EN TRANSITO"])
             m_ent = len(df_res[df_res['Estado'] == "ENTREGADO"])
@@ -261,7 +260,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             busq_res = st.text_input("🔍 Buscar caja por ID:", key="res_search")
             if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
             
-            # --- CAMBIO QUIRÚRGICO: DESPLEGABLES POR ESTADO ---
             estados_config = [
                 ("RECIBIDO ALMACEN PRINCIPAL", "📦 Almacén"),
                 ("EN TRANSITO", "✈️ Tránsito"),
@@ -271,8 +269,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             for est_key, est_label in estados_config:
                 df_f = df_res[df_res['Estado'] == est_key].copy()
                 with st.expander(f"{est_label} ({len(df_f)})", expanded=False):
-                    if df_f.empty:
-                        st.info(f"No hay mercancía {est_label.lower()}.")
+                    if df_f.empty: st.info(f"No hay mercancía.")
                     else:
                         for _, row in df_f.iterrows():
                             icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
@@ -285,12 +282,24 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                                 </div>
                             """, unsafe_allow_html=True)
 
-# --- 5. PANEL DEL CLIENTE ---
+# --- 5. PANEL DEL CLIENTE (CAMBIO QUIRÚRGICO: BUSCADOR AÑADIDO) ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
+    
+    # Buscador para el cliente
+    busq_cliente = st.text_input("🔍 Buscar paquete por ID / Tracking:", placeholder="Ej: 123456")
+    
+    # Obtener paquetes del usuario
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
-    if not mis_p: st.info("No tienes envíos registrados.")
+    
+    # Aplicar filtro de búsqueda si hay texto
+    if busq_cliente:
+        mis_p = [p for p in mis_p if busq_cliente.lower() in str(p.get('ID_Barra', '')).lower()]
+
+    if not mis_p:
+        if busq_cliente: st.warning("No se encontró ningún paquete con ese ID.")
+        else: st.info("No tienes envíos registrados.")
     else:
         col_p1, col_p2 = st.columns(2)
         for i, p in enumerate(mis_p):
@@ -304,42 +313,4 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                 st.markdown(f"""
                     <div class="p-card">
                         <div style="display:flex; justify-content:space-between;">
-                            <span style="color:#60a5fa; font-weight:bold;">{icon_cli} #{p['ID_Barra']}</span>
-                            <span class="{badge}">{p.get('Pago')}</span>
-                        </div>
-                        <div style="font-size:0.9em; margin:10px 0;">
-                            📍 <b>Estado:</b> {p['Estado']}<br>
-                            ⚖️ <b>Medida:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} {uni}
-                        </div>
-                """, unsafe_allow_html=True)
-                st.progress(abo/tot if tot > 0 else 0)
-                st.markdown(f"""
-                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px; color:#cbd5e1;">
-                            <span>✅ Pagado: {porc_pagado:.1f}%</span>
-                            <span>⏳ Pendiente: {porc_falta:.1f}%</span>
-                        </div>
-                        <div style="margin-top:10px; font-weight:bold;">Restan: ${ (tot-abo):.2f}</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-# --- 6. LOGIN ---
-else:
-    st.write("<br><br>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1, 1.5, 1])
-    with c2:
-        st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
-        t1, t2 = st.tabs(["Ingresar", "Registrarse"])
-        with t1:
-            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-            if st.button("Entrar", use_container_width=True):
-                if le == "admin" and lp == "admin123":
-                    st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                if u: st.session_state.usuario_identificado = u; st.rerun()
-                else: st.error("Credenciales incorrectas")
-        with t2:
-            with st.form("signup"):
-                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                if st.form_submit_button("Crear Cuenta"):
-                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
+                            <span style
