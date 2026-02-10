@@ -4,64 +4,111 @@ import os
 import hashlib
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL ---
+# --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL EVOLUCIONADA ---
 st.set_page_config(page_title="IACargo.io | Evolution System", layout="wide", page_icon="🚀")
 
 st.markdown("""
     <style>
+    /* Importar fuente cursiva profesional */
     @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
-    .stApp { background: radial-gradient(circle at top left, #1e3a8a 0%, #0f172a 100%); color: #ffffff; }
+
+    /* Fondo General Tecnológico */
+    .stApp {
+        background: radial-gradient(circle at top left, #1e3a8a 0%, #0f172a 100%);
+        color: #ffffff;
+    }
+
+    /* Estilo para Título y Slogan Cursivo Profesional (CON AJUSTE DE ESPACIADO) */
     .fuente-cursiva {
         font-family: 'Dancing Script', cursive !important;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 700; text-align: center;
+        font-weight: 700;
+        text-align: center;
     }
+
+    /* Contenedores Glassmorphism */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px !important;
-        padding: 20px; margin-bottom: 15px; color: white !important;
+        padding: 20px;
+        margin-bottom: 15px;
+        color: white !important;
     }
+
+    /* Títulos con Degradado */
     .welcome-text { 
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         font-weight: 800; font-size: 38px; margin-bottom: 10px; 
     }
+    
+    /* Forzar visibilidad de textos */
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
+
+    /* Badges de Estado */
     .badge-paid { background: linear-gradient(90deg, #059669, #10b981); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     .badge-debt { background: linear-gradient(90deg, #dc2626, #f87171); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
-    .state-header { background: rgba(255, 255, 255, 0.1); border-left: 5px solid #3b82f6; color: #60a5fa !important; padding: 12px; border-radius: 8px; margin: 20px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-    .stButton>button { border-radius: 12px !important; background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border: none !important; font-weight: 600 !important; transition: all 0.3s ease !important; width: 100% !important; }
-    .stButton>button:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+
+    /* Cabeceras de Logística */
+    .state-header {
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 5px solid #3b82f6;
+        color: #60a5fa !important; padding: 12px; border-radius: 8px; margin: 20px 0; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* Botones */
+    .stButton>button {
+        border-radius: 12px !important;
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: white !important;
+        border: none !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Botón Eliminar */
     .btn-eliminar button { background: linear-gradient(90deg, #ef4444, #b91c1c) !important; }
-    [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid rgba(255, 255, 255, 0.1); }
+
+    /* Barra Lateral */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. CONFIGURACIÓN DE DATOS ---
+# --- 2. CONFIGURACIÓN DE DATOS (ESTRICTAMENTE IGUAL) ---
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
+PRECIO_POR_KG = 5.0
 
-# Constantes de Precios
-PRECIO_AEREO_KG = 5.0
-PRECIO_MARITIMO_FT3 = 18.0
-
-def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
+def hash_password(password):
+    return hashlib.sha256(str.encode(password)).hexdigest()
 
 def cargar_datos(archivo):
     if os.path.exists(archivo):
         try:
             df = pd.read_csv(archivo)
-            if 'Fecha_Registro' in df.columns: df['Fecha_Registro'] = pd.to_datetime(df['Fecha_Registro'])
+            if 'Fecha_Registro' in df.columns:
+                df['Fecha_Registro'] = pd.to_datetime(df['Fecha_Registro'])
             return df.to_dict('records')
         except: return []
     return []
 
-def guardar_datos(datos, archivo): pd.DataFrame(datos).to_csv(archivo, index=False)
+def guardar_datos(datos, archivo):
+    pd.DataFrame(datos).to_csv(archivo, index=False)
 
 if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
 if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
@@ -84,7 +131,7 @@ with st.sidebar:
     st.markdown('<p class="fuente-cursiva" style="font-size: 16px; text-align: left; color: #a78bfa;">“Trabajamos para conectarte en todas partes del mundo”</p>', unsafe_allow_html=True)
     st.caption("“No eres herramienta, eres evolución”")
 
-# --- 4. INTERFAZ DE ADMINISTRADOR ---
+# --- 4. INTERFAZ DE ADMINISTRADOR (LÓGICA INTACTA) ---
 if st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "admin":
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -93,90 +140,53 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
     with t_reg:
         st.subheader("Registro de Entrada")
         with st.form("reg_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                f_id = st.text_input("ID Tracking / Guía")
-                f_cli = st.text_input("Nombre del Cliente")
-                f_cor = st.text_input("Correo del Cliente")
-            with col2:
-                f_tipo = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"])
-                f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            
-            st.write("---")
-            monto_calculado = 0.0
-            unidad_medida = ""
-            valor_medida = 0.0
-
-            if f_tipo == "Aéreo":
-                f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
-                monto_calculado = f_pes * PRECIO_AEREO_KG
-                unidad_medida = "Kg"
-                valor_medida = f_pes
-            else:
-                col_m1, col_m2, col_m3 = st.columns(3)
-                with col_m1: largo = st.number_input("Largo (pulg)", min_value=0.0)
-                with col_m2: ancho = st.number_input("Ancho (pulg)", min_value=0.0)
-                with col_m3: alto = st.number_input("Alto (pulg)", min_value=0.0)
-                # Cálculo: (L*A*A)/1728 para convertir pulgadas cúbicas a pies cúbicos
-                ft3 = (largo * ancho * alto) / 1728
-                st.info(f"Volumen estimado: {ft3:.2f} ft³")
-                monto_calculado = ft3 * PRECIO_MARITIMO_FT3
-                unidad_medida = "ft³"
-                valor_medida = ft3
-
+            f_id = st.text_input("ID Tracking / Guía")
+            f_cli = st.text_input("Nombre del Cliente")
+            f_cor = st.text_input("Correo del Cliente")
+            f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
+            f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
             if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
                     nuevo = {
                         "ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), 
-                        "Tipo": f_tipo, "Medida_Inicial": valor_medida, "Unidad": unidad_medida,
-                        "Peso_Almacen": 0.0, "Validado": False, 
-                        "Monto_USD": monto_calculado, "Estado": "RECIBIDO ALMACEN PRINCIPAL", 
+                        "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, 
+                        "Monto_USD": f_pes*PRECIO_POR_KG, "Estado": "RECIBIDO ALMACEN PRINCIPAL", 
                         "Pago": "PENDIENTE", "Modalidad": f_mod, "Abonado": 0.0, "Fecha_Registro": datetime.now()
                     }
                     st.session_state.inventario.append(nuevo)
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                    st.success(f"✅ Guía {f_tipo} {f_id} registrada.")
+                    st.success(f"✅ Guía {f_id} registrada.")
 
     with t_val:
-        st.subheader("Báscula y Medición de Almacén")
+        st.subheader("Báscula de Almacén")
         pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
         if pendientes:
-            guia_v = st.selectbox("Seleccione Guía para Validar:", [p["ID_Barra"] for p in pendientes])
+            guia_v = st.selectbox("Seleccione Guía para Pesar:", [p["ID_Barra"] for p in pendientes])
             paq = next(p for p in pendientes if p["ID_Barra"] == guia_v)
-            st.info(f"Cliente: {paq['Cliente']} | Tipo: {paq['Tipo']} | Inicial: {paq.get('Medida_Inicial', 0):.2f} {paq.get('Unidad', '')}")
-            
-            if paq['Tipo'] == "Aéreo":
-                val_real = st.number_input("Peso Real Almacén (Kg)", min_value=0.0, value=float(paq.get('Medida_Inicial', 0)), step=0.1)
-                monto_final = val_real * PRECIO_AEREO_KG
-            else:
-                c_l, c_an, c_al = st.columns(3)
-                l_v = c_l.number_input("Largo Real (pulg)", min_value=0.0)
-                an_v = c_an.number_input("Ancho Real (pulg)", min_value=0.0)
-                al_v = c_al.number_input("Alto Real (pulg)", min_value=0.0)
-                val_real = (l_v * an_v * al_v) / 1728
-                st.write(f"Volumen Final: **{val_real:.2f} ft³**")
-                monto_final = val_real * PRECIO_MARITIMO_FT3
-
-            if st.button("⚖️ Validar Medidas"):
-                paq['Peso_Almacen'] = val_real # Guardamos en este campo para no romper compatibilidad
+            st.info(f"Cliente: {paq['Cliente']} | Peso Reportado: {paq['Peso_Mensajero']} Kg")
+            peso_real = st.number_input("Peso Real en Báscula (Kg)", min_value=0.0, value=float(paq['Peso_Mensajero']), step=0.1)
+            if st.button("⚖️ Validar Peso"):
+                paq['Peso_Almacen'] = peso_real
                 paq['Validado'] = True
-                paq['Monto_USD'] = monto_final
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Validado."); st.rerun()
+                paq['Monto_USD'] = peso_real * PRECIO_POR_KG
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Peso validado."); st.rerun()
         else: st.info("Sin pendientes.")
 
-    # Las pestañas t_cob, t_est, t_aud y t_res siguen funcionando igual con el nuevo cálculo
     with t_cob:
         st.subheader("Gestión de Cobros")
-        pendientes_pago = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
-        for p in pendientes_pago:
-            with st.expander(f"💰 {p['ID_Barra']} - {p['Cliente']} ({p.get('Tipo', 'Aéreo')})"):
-                resta = p['Monto_USD'] - p.get('Abonado', 0.0)
-                st.write(f"Total: **${p['Monto_USD']:.2f}** | Pendiente: **${resta:.2f}**")
-                monto_abono = st.number_input(f"Abonar a {p['ID_Barra']}", min_value=0.0, max_value=float(resta), key=f"c_{p['ID_Barra']}")
-                if st.button(f"Registrar Pago", key=f"b_{p['ID_Barra']}"):
-                    p['Abonado'] = p.get('Abonado', 0.0) + monto_abono
-                    if p['Abonado'] >= p['Monto_USD']: p['Pago'] = 'PAGADO'
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+        if st.session_state.inventario:
+            pendientes_pago = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
+            for p in pendientes_pago:
+                with st.expander(f"💰 {p['ID_Barra']} - {p['Cliente']}"):
+                    total = p['Monto_USD']
+                    abonado = p.get('Abonado', 0.0)
+                    resta = total - abonado
+                    st.write(f"Modalidad: **{p.get('Modalidad')}** | Resta: **${resta:.2f}**")
+                    monto_abono = st.number_input(f"Abonar a {p['ID_Barra']}", min_value=0.0, max_value=float(resta), key=f"c_{p['ID_Barra']}")
+                    if st.button(f"Registrar Pago", key=f"b_{p['ID_Barra']}"):
+                        p['Abonado'] = abonado + monto_abono
+                        if p['Abonado'] >= p['Monto_USD']: p['Pago'] = 'PAGADO'
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_est:
         st.subheader("Logística de Envío")
@@ -189,17 +199,53 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_aud:
-        st.subheader("Auditoría")
-        st.dataframe(pd.DataFrame(st.session_state.inventario), use_container_width=True)
+        col_a1, col_a2 = st.columns([3, 1])
+        with col_a1: st.subheader("Auditoría y Edición")
+        with col_a2: ver_p = st.checkbox("🗑️ Papelera")
+        if ver_p:
+            if st.session_state.papelera:
+                st.dataframe(pd.DataFrame(st.session_state.papelera), use_container_width=True)
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("Papelera vacía.")
+        else:
+            busq = st.text_input("🔍 Buscar por Guía:")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if busq: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq, case=False)]
+            st.dataframe(df_aud, use_container_width=True)
+            st.write("---")
+            guia_ed = st.selectbox("Editar/Eliminar ID:", [p["ID_Barra"] for p in st.session_state.inventario])
+            paq_ed = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed), None)
+            if paq_ed:
+                c1, c2, c3 = st.columns(3)
+                with c1: new_cli = st.text_input("Cliente", value=paq_ed['Cliente'])
+                with c2: new_pes = st.number_input("Peso Almacén", value=float(paq_ed['Peso_Almacen']))
+                with c3: new_pago = st.selectbox("Estado Pago", ["PENDIENTE", "PAGADO"], index=0 if paq_ed['Pago']=="PENDIENTE" else 1)
+                b_save, b_del = st.columns(2)
+                with b_save:
+                    if st.button("💾 Guardar Cambios"):
+                        paq_ed.update({'Cliente': new_cli, 'Peso_Almacen': new_pes, 'Pago': new_pago, 'Monto_USD': new_pes*PRECIO_POR_KG})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                with b_del:
+                    st.markdown('<div class="btn-eliminar">', unsafe_allow_html=True)
+                    if st.button("🗑️ Enviar a Papelera"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     with t_res:
         st.subheader("Resumen de Operaciones")
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
             m1, m2, m3 = st.columns(3)
-            m1.metric("Ingresos Totales", f"${df_res['Monto_USD'].sum():.2f}")
+            m1.metric("Kg Totales", f"{df_res['Peso_Almacen'].sum():.1f}")
             m2.metric("Paquetes", len(df_res))
-            m3.metric("Aéreo vs Marítimo", f"{len(df_res[df_res['Tipo']=='Aéreo'])} / {len(df_res[df_res['Tipo']=='Marítimo'])}")
+            m3.metric("Caja (Abonos)", f"${df_res['Abonado'].sum():.2f}")
 
 # --- 5. PANEL DEL CLIENTE ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
@@ -207,32 +253,52 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
     u_mail = str(u.get('correo', '')).lower()
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u_mail]
-    if mis_p:
+    if not mis_p:
+        st.info("No hay paquetes asociados.")
+    else:
         st.subheader("📋 Mis Envíos")
-        for p in mis_p:
-            with st.container():
+        col_paq1, col_paq2 = st.columns(2)
+        for i, p in enumerate(mis_p):
+            with (col_paq1 if i % 2 == 0 else col_paq2):
+                total = p['Monto_USD']; abonado = p.get('Abonado', 0.0); pago_s = p.get('Pago', 'PENDIENTE')
+                badge = "badge-paid" if pago_s == "PAGADO" else "badge-debt"
                 st.markdown(f"""
                     <div class="p-card">
-                        <span style="color:#60a5fa; font-weight:bold;">#{p['ID_Barra']} ({p.get('Tipo', 'Aéreo')})</span><br>
-                        📍 Estado: {p['Estado']}<br>
-                        💰 Total: ${p['Monto_USD']:.2f} | Resta: ${p['Monto_USD']-p['Abonado']:.2f}
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight:bold; color:#60a5fa; font-size:1.2em; font-style:italic;">#{p['ID_Barra']}</span>
+                            <span class="{badge}">{pago_s}</span>
+                        </div>
+                        <div style="font-size: 0.9em; margin: 12px 0; color:#e2e8f0;">
+                            📍 <b>Estado:</b> {p['Estado']}<br>
+                            ⚖️ <b>Peso:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} Kg
+                        </div>
+                """, unsafe_allow_html=True)
+                st.progress(abonado/total if total > 0 else 0)
+                st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-top: 8px;">
+                            <span>Abonado: <b>${abonado:.2f}</b></span>
+                            <span style="color:#f87171;">Resta: <b>${(total-abonado):.2f}</b></span>
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
-    else: st.info("No hay paquetes asociados.")
 
-# --- 6. ACCESO ---
+# --- 6. ACCESO (AJUSTE DE MÁRGENES TÍTULO-SLOGAN) ---
 else:
     st.write("<br><br>", unsafe_allow_html=True)
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    
     with col_l2:
         st.markdown("""
             <div style="text-align: center; margin-bottom: 30px;">
-                <div class="fuente-cursiva" style="font-size: 95px; margin-bottom: 10px; line-height: 1;">IACargo.io</div>
+                <div class="fuente-cursiva" style="font-size: 95px; margin-bottom: 10px; line-height: 1;">
+                    IACargo.io
+                </div>
                 <p class="fuente-cursiva" style="font-size: 20px; color: #a78bfa !important; white-space: nowrap; margin-top: 0px;">
                     “Trabajamos para conectarte en todas partes del mundo”
                 </p>
             </div>
         """, unsafe_allow_html=True)
+        
         t1, t2 = st.tabs(["Ingresar", "Registro"])
         with t1:
             le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
