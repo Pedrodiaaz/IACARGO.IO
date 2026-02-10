@@ -58,6 +58,18 @@ st.markdown("""
         border: 1px solid #60a5fa !important;
     }
 
+    .header-resumen {
+        background: linear-gradient(90deg, #2563eb, #1e40af);
+        color: white !important;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 1.1em;
+        margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        border-left: 6px solid #60a5fa;
+    }
+
     .resumen-row {
         background-color: #ffffff !important;
         color: #1e293b !important;
@@ -247,7 +259,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
             
-            # --- MÉTRICAS SUPERIORES ---
+            # --- SECCIÓN DE MÉTRICAS SUPERIORES ---
             m_alm = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
             m_tra = len(df_res[df_res['Estado'] == "EN TRANSITO"])
             m_ent = len(df_res[df_res['Estado'] == "ENTREGADO"])
@@ -261,31 +273,23 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             busq_res = st.text_input("🔍 Buscar caja por ID:", key="res_search")
             if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
             
-            # --- CAMBIO QUIRÚRGICO: DESPLEGABLES POR ESTADO ---
-            estados_config = [
-                ("RECIBIDO ALMACEN PRINCIPAL", "📦 Almacén"),
-                ("EN TRANSITO", "✈️ Tránsito"),
-                ("ENTREGADO", "✅ Entregado")
-            ]
+            estados = {"RECIBIDO ALMACEN PRINCIPAL": "📦 Almacén", "EN TRANSITO": "✈️ Tránsito", "ENTREGADO": "✅ Entregado"}
             
-            for est_key, est_label in estados_config:
+            for est_key, est_label in estados.items():
                 df_f = df_res[df_res['Estado'] == est_key].copy()
-                with st.expander(f"{est_label} ({len(df_f)})", expanded=False):
-                    if df_f.empty:
-                        st.info(f"No hay mercancía {est_label.lower()}.")
-                    else:
-                        for _, row in df_f.iterrows():
-                            icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
-                            u_r = "Pies" if row.get('Tipo_Traslado') == "Marítimo" else "Kg"
-                            st.markdown(f"""
-                                <div class="resumen-row">
-                                    <div class="resumen-id">{icon} {row['ID_Barra']}</div>
-                                    <div class="resumen-cliente">{row['Cliente']}</div>
-                                    <div class="resumen-data">{row['Peso_Almacen']:.1f} {u_r} | {row['Pago']} | ${row['Abonado']:.2f}</div>
-                                </div>
-                            """, unsafe_allow_html=True)
+                st.markdown(f'<div class="header-resumen">{est_label} ({len(df_f)})</div>', unsafe_allow_html=True)
+                for _, row in df_f.iterrows():
+                    icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                    u_r = "Pies" if row.get('Tipo_Traslado') == "Marítimo" else "Kg"
+                    st.markdown(f"""
+                        <div class="resumen-row">
+                            <div class="resumen-id">{icon} {row['ID_Barra']}</div>
+                            <div class="resumen-cliente">{row['Cliente']}</div>
+                            <div class="resumen-data">{row['Peso_Almacen']:.1f} {u_r} | {row['Pago']} | ${row['Abonado']:.2f}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-# --- 5. PANEL DEL CLIENTE ---
+# --- 5. PANEL DEL CLIENTE (CAMBIO QUIRÚRGICO REALIZADO AQUÍ) ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -298,6 +302,8 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                 tot = p['Monto_USD']; abo = p.get('Abonado', 0.0); uni = "Pies" if p.get('Tipo_Traslado') == "Marítimo" else "Kg"
                 badge = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
                 icon_cli = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                
+                # Cálculos Quirúrgicos de Porcentaje
                 porc_pagado = (abo / tot * 100) if tot > 0 else 0
                 porc_falta = 100 - porc_pagado if tot > 0 else 0
                 
@@ -312,7 +318,11 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                             ⚖️ <b>Medida:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} {uni}
                         </div>
                 """, unsafe_allow_html=True)
+                
+                # Barra de progreso
                 st.progress(abo/tot if tot > 0 else 0)
+                
+                # Visualización de Porcentajes y Restante
                 st.markdown(f"""
                         <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px; color:#cbd5e1;">
                             <span>✅ Pagado: {porc_pagado:.1f}%</span>
