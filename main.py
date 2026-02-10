@@ -39,12 +39,23 @@ st.markdown("""
         color: white !important;
     }
 
+    /* BOTÓN DE REGISTRO AZUL PERMANENTE */
     div[data-testid="stForm"]  button {
+        background-color: #2563eb !important;
+        background-image: none !important;
+        color: white !important;
+        border: 1px solid #60a5fa !important;
+        opacity: 1 !important;
+        transition: none !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+    }
+    div[data-testid="stForm"]  button:hover, 
+    div[data-testid="stForm"]  button:active, 
+    div[data-testid="stForm"]  button:focus {
         background-color: #2563eb !important;
         color: white !important;
         border: 1px solid #60a5fa !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
     }
 
     .resumen-row {
@@ -78,10 +89,11 @@ st.markdown("""
         color: white !important;
         border: none !important;
         font-weight: 600 !important;
+        transition: all 0.3s ease !important;
         width: 100% !important;
     }
     .btn-eliminar button { background: linear-gradient(90deg, #ef4444, #b91c1c) !important; }
-    [data-testid="stSidebar"] { background-color: #0f172a !important; }
+    [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -116,7 +128,7 @@ with st.sidebar:
     st.write("---")
     if st.session_state.usuario_identificado:
         st.success(f"Socio: {st.session_state.usuario_identificado.get('nombre', 'Usuario')}")
-        if st.button("Cerrar Sesión"):
+        if st.button("Cerrar Sesión", use_container_width=True):
             st.session_state.usuario_identificado = None; st.rerun()
     else: rol_vista = st.radio("Navegación:", ["🔑 Portal Clientes", "🔐 Administración"])
     st.write("---")
@@ -126,114 +138,208 @@ with st.sidebar:
 # --- 4. INTERFAZ DE ADMINISTRADOR ---
 if st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "admin":
     st.title("⚙️ Consola de Control Logístico")
-    tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
+    tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res = tabs
 
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"])
-        label_din = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso Mensajero (Kg)"
+        label_dinamico = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso Mensajero (Kg)"
+        
         with st.form("reg_form", clear_on_submit=True):
             f_id = st.text_input("ID Tracking / Guía")
             f_cli = st.text_input("Nombre del Cliente")
             f_cor = st.text_input("Correo del Cliente")
-            f_pes = st.number_input(label_din, min_value=0.0, step=0.1)
-            f_mod = st.selectbox("Modalidad", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            if st.form_submit_button("Registrar"):
+            f_pes = st.number_input(label_dinamico, min_value=0.0, step=0.1)
+            f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
+            
+            if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
-                    nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
+                    nuevo = {
+                        "ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), 
+                        "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, 
+                        "Monto_USD": f_pes * PRECIO_POR_UNIDAD, 
+                        "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", 
+                        "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()
+                    }
                     st.session_state.inventario.append(nuevo)
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success(f"✅ Guía {f_id} registrada."); st.rerun()
 
     with t_val:
-        st.subheader("⚖️ Validación")
-        pend = [p for p in st.session_state.inventario if not p.get('Validado')]
-        if pend:
-            guia_v = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in pend], key="admin_val_select")
-            paq = next(p for p in pend if p["ID_Barra"] == guia_v)
-            peso_real = st.number_input("Medida Real", min_value=0.0, value=float(paq['Peso_Mensajero']), key="admin_val_input")
-            if st.button("⚖️ Validar", key="admin_val_btn"):
+        st.subheader("⚖️ Validación en Almacén")
+        pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
+        if pendientes:
+            guia_v = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in pendientes])
+            paq = next(p for p in pendientes if p["ID_Barra"] == guia_v)
+            u_medida = "Pies Cúbicos" if paq.get('Tipo_Traslado') == "Marítimo" else "Kg"
+            st.info(f"Cliente: {paq['Cliente']} | Reportado: {paq['Peso_Mensajero']} {u_medida}")
+            
+            peso_real = st.number_input(f"Medida Real en Almacén ({u_medida})", min_value=0.0, value=float(paq['Peso_Mensajero']), step=0.1)
+            
+            if st.button("⚖️ Confirmar y Validar"):
                 paq['Peso_Almacen'] = peso_real; paq['Validado'] = True; paq['Monto_USD'] = peso_real * PRECIO_POR_UNIDAD
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Validado exitosamente."); st.rerun()
+        else: st.info("No hay paquetes pendientes de validación.")
 
     with t_cob:
-        st.subheader("💰 Cobros")
-        pend_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
-        for p in pend_p:
-            # SOLUCIÓN AL ERROR: Key única con prefijo 'admin_cob_'
+        st.subheader("💰 Gestión de Cobros")
+        pendientes_pago = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
+        for p in pendientes_pago:
             with st.expander(f"💵 {p['ID_Barra']} - {p['Cliente']}"):
                 resta = p['Monto_USD'] - p.get('Abonado', 0.0)
-                monto_abono = st.number_input(f"Abono para {p['ID_Barra']}", 0.0, float(resta), key=f"admin_cob_val_{p['ID_Barra']}")
-                if st.button(f"Pagar {p['ID_Barra']}", key=f"admin_cob_btn_{p['ID_Barra']}"):
+                st.write(f"Modalidad: **{p.get('Modalidad')}** | Restante: **${resta:.2f}**")
+                monto_abono = st.number_input(f"Abonar a {p['ID_Barra']}", 0.0, float(resta), key=f"c_{p['ID_Barra']}")
+                if st.button(f"Registrar Pago", key=f"b_{p['ID_Barra']}"):
                     p['Abonado'] = p.get('Abonado', 0.0) + monto_abono
                     if p['Abonado'] >= p['Monto_USD']: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_est:
-        st.subheader("✈️ Estatus")
+        st.subheader("✈️ Estatus de Logística")
         if st.session_state.inventario:
-            sel_e = st.selectbox("Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="admin_est_sel")
-            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"], key="admin_est_val")
-            if st.button("Actualizar", key="admin_est_btn"):
+            sel_e = st.selectbox("ID de Guía:", [p["ID_Barra"] for p in st.session_state.inventario])
+            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"])
+            if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Estatus actualizado."); st.rerun()
 
     with t_aud:
-        st.subheader("🔍 Auditoría")
-        df_aud = pd.DataFrame(st.session_state.inventario)
-        st.dataframe(df_aud, use_container_width=True)
+        col_a1, col_a2 = st.columns([3, 1])
+        with col_a1: st.subheader("🔍 Auditoría")
+        with col_a2: ver_p = st.checkbox("🗑️ Ver Papelera")
+        
+        if ver_p:
+            if st.session_state.papelera:
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar Guía"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+        else:
+            busq = st.text_input("🔍 Buscar por Guía:")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if busq: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq, case=False)]
+            st.dataframe(df_aud, use_container_width=True)
+            
+            if st.session_state.inventario:
+                guia_ed = st.selectbox("Editar ID:", [p["ID_Barra"] for p in st.session_state.inventario])
+                paq_ed = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed), None)
+                if paq_ed:
+                    c1, c2, c3 = st.columns(3)
+                    label_ed = "Pies Cúbicos" if paq_ed.get('Tipo_Traslado') == "Marítimo" else "Peso (Kg)"
+                    with c1: n_cli = st.text_input("Cliente", value=paq_ed['Cliente'])
+                    with c2: n_pes = st.number_input(label_ed, value=float(paq_ed['Peso_Almacen']))
+                    with c3: n_tra = st.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed.get('Tipo_Traslado')=="Aéreo" else 1)
+                    if st.button("💾 Guardar"):
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes*PRECIO_POR_UNIDAD})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                    st.markdown('<div class="btn-eliminar">', unsafe_allow_html=True)
+                    if st.button("🗑️ Eliminar"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     with t_res:
-        st.subheader("📊 Resumen")
+        st.subheader("📊 Resumen General")
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
-            busq_res = st.text_input("🔍 Buscar en Resumen:", key="admin_res_search")
+            
+            # --- MÉTRICAS SUPERIORES ---
+            m_alm = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
+            m_tra = len(df_res[df_res['Estado'] == "EN TRANSITO"])
+            m_ent = len(df_res[df_res['Estado'] == "ENTREGADO"])
+            
+            c_m1, c_m2, c_m3 = st.columns(3)
+            with c_m1: st.metric("📦 En Almacén", m_alm)
+            with c_m2: st.metric("✈️ En Tránsito", m_tra)
+            with c_m3: st.metric("✅ Entregados", m_ent)
+            st.write("---")
+
+            busq_res = st.text_input("🔍 Buscar caja por ID:", key="res_search")
             if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
             
-            for est, lab in [("RECIBIDO ALMACEN PRINCIPAL", "📦 Almacén"), ("EN TRANSITO", "✈️ Tránsito"), ("ENTREGADO", "✅ Entregado")]:
-                df_f = df_res[df_res['Estado'] == est]
-                with st.expander(f"{lab} ({len(df_f)})"):
-                    for _, r in df_f.iterrows():
-                        st.markdown(f'<div class="resumen-row"><div class="resumen-id">{r["ID_Barra"]}</div><div class="resumen-cliente">{r["Cliente"]}</div><div class="resumen-data">${r["Abonado"]:.2f}</div></div>', unsafe_allow_html=True)
+            # --- CAMBIO QUIRÚRGICO: DESPLEGABLES POR ESTADO ---
+            estados_config = [
+                ("RECIBIDO ALMACEN PRINCIPAL", "📦 Almacén"),
+                ("EN TRANSITO", "✈️ Tránsito"),
+                ("ENTREGADO", "✅ Entregado")
+            ]
+            
+            for est_key, est_label in estados_config:
+                df_f = df_res[df_res['Estado'] == est_key].copy()
+                with st.expander(f"{est_label} ({len(df_f)})", expanded=False):
+                    if df_f.empty:
+                        st.info(f"No hay mercancía {est_label.lower()}.")
+                    else:
+                        for _, row in df_f.iterrows():
+                            icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                            u_r = "Pies" if row.get('Tipo_Traslado') == "Marítimo" else "Kg"
+                            st.markdown(f"""
+                                <div class="resumen-row">
+                                    <div class="resumen-id">{icon} {row['ID_Barra']}</div>
+                                    <div class="resumen-cliente">{row['Cliente']}</div>
+                                    <div class="resumen-data">{row['Peso_Almacen']:.1f} {u_r} | {row['Pago']} | ${row['Abonado']:.2f}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
 
 # --- 5. PANEL DEL CLIENTE ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
-    
-    busq_cli = st.text_input("🔍 Buscar paquete por ID:", key="client_search_input")
-    mis_p = [p for p in st.session_state.inventario if str(p.get('Correo')).lower() == str(u.get('correo')).lower()]
-    if busq_cli:
-        mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
-
-    if not mis_p: st.info("No hay paquetes.")
+    mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
+    if not mis_p: st.info("No tienes envíos registrados.")
     else:
-        c1, c2 = st.columns(2)
+        col_p1, col_p2 = st.columns(2)
         for i, p in enumerate(mis_p):
-            with (c1 if i % 2 == 0 else c2):
-                tot = p['Monto_USD']; abo = p.get('Abonado', 0.0)
-                st.markdown(f'<div class="p-card"><b>ID: {p["ID_Barra"]}</b><br>Estado: {p["Estado"]}<br>Pago: {p["Pago"]}</div>', unsafe_allow_html=True)
+            with (col_p1 if i % 2 == 0 else col_p2):
+                tot = p['Monto_USD']; abo = p.get('Abonado', 0.0); uni = "Pies" if p.get('Tipo_Traslado') == "Marítimo" else "Kg"
+                badge = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                icon_cli = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                porc_pagado = (abo / tot * 100) if tot > 0 else 0
+                porc_falta = 100 - porc_pagado if tot > 0 else 0
+                
+                st.markdown(f"""
+                    <div class="p-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:#60a5fa; font-weight:bold;">{icon_cli} #{p['ID_Barra']}</span>
+                            <span class="{badge}">{p.get('Pago')}</span>
+                        </div>
+                        <div style="font-size:0.9em; margin:10px 0;">
+                            📍 <b>Estado:</b> {p['Estado']}<br>
+                            ⚖️ <b>Medida:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} {uni}
+                        </div>
+                """, unsafe_allow_html=True)
                 st.progress(abo/tot if tot > 0 else 0)
+                st.markdown(f"""
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:5px; color:#cbd5e1;">
+                            <span>✅ Pagado: {porc_pagado:.1f}%</span>
+                            <span>⏳ Pendiente: {porc_falta:.1f}%</span>
+                        </div>
+                        <div style="margin-top:10px; font-weight:bold;">Restan: ${ (tot-abo):.2f}</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
 # --- 6. LOGIN ---
 else:
+    st.write("<br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
         st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
-        tab_l, tab_r = st.tabs(["Ingresar", "Registrarse"])
-        with tab_l:
-            le = st.text_input("Correo", key="login_email")
-            lp = st.text_input("Clave", type="password", key="login_pass")
+        t1, t2 = st.tabs(["Ingresar", "Registrarse"])
+        with t1:
+            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
             if st.button("Entrar", use_container_width=True):
                 if le == "admin" and lp == "admin123":
                     st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                user = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                if user: st.session_state.usuario_identificado = user; st.rerun()
-                else: st.error("Error de credenciales")
-        with tab_r:
-            with st.form("signup_form"):
+                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
+                if u: st.session_state.usuario_identificado = u; st.rerun()
+                else: st.error("Credenciales incorrectas")
+        with t2:
+            with st.form("signup"):
                 n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                 if st.form_submit_button("Crear Cuenta"):
                     st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada"); st.rerun()
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
