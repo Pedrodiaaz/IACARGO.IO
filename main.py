@@ -113,7 +113,7 @@ st.markdown("""
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
-PRECIO_POR_UNIDAD = 5.0 # Cambiamos el nombre conceptual de KG a UNIDAD
+PRECIO_POR_UNIDAD = 5.0
 
 def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -155,7 +155,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
 
     with t_reg:
         st.subheader("Registro de Entrada")
-        # Selector fuera del form para reactividad inmediata
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"])
         label_dinamico = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso Mensajero (Kg)"
         
@@ -171,7 +170,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                     nuevo = {
                         "ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), 
                         "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, 
-                        "Monto_USD": f_pes * PRECIO_UNIDAD_DINAMICO if 'PRECIO_UNIDAD_DINAMICO' in locals() else f_pes * 5.0, 
+                        "Monto_USD": f_pes * PRECIO_POR_UNIDAD, 
                         "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", 
                         "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()
                     }
@@ -187,9 +186,11 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             u_medida = "Pies Cúbicos" if paq.get('Tipo_Traslado') == "Marítimo" else "Kg"
             st.info(f"Cliente: {paq['Cliente']} | Reportado: {paq['Peso_Mensajero']} {u_medida}")
             
-            peso_real = st.number_input(f"Medida Real en Almacén ({u_med Medida})", min_value=0.0, value=float(paq['Peso_Mensajero']), step=0.1)
+            # --- LÍNEA CORREGIDA AQUÍ ---
+            peso_real = st.number_input(f"Medida Real en Almacén ({u_medida})", min_value=0.0, value=float(paq['Peso_Mensajero']), step=0.1)
+            
             if st.button("⚖️ Confirmar y Validar"):
-                paq['Peso_Almacen'] = peso_real; paq['Validado'] = True; paq['Monto_USD'] = peso_real * 5.0
+                paq['Peso_Almacen'] = peso_real; paq['Validado'] = True; paq['Monto_USD'] = peso_real * PRECIO_POR_UNIDAD
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("✅ Validado exitosamente."); st.rerun()
         else: st.info("No hay paquetes pendientes de validación.")
 
@@ -245,7 +246,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                     with c2: n_pes = st.number_input(label_ed, value=float(paq_ed['Peso_Almacen']))
                     with c3: n_tra = st.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed.get('Tipo_Traslado')=="Aéreo" else 1)
                     if st.button("💾 Guardar"):
-                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes*5.0})
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes*PRECIO_POR_UNIDAD})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
                     st.markdown('<div class="btn-eliminar">', unsafe_allow_html=True)
                     if st.button("🗑️ Eliminar"):
@@ -295,32 +296,4 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                             <span style="color:#60a5fa; font-weight:bold;">#{p['ID_Barra']}</span>
                             <span class="{badge}">{p.get('Pago')}</span>
                         </div>
-                        <div style="font-size:0.9em; margin:10px 0;">
-                            📍 <b>Estado:</b> {p['Estado']}<br>
-                            ⚖️ <b>Medida:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} {uni}
-                        </div>
-                """, unsafe_allow_html=True)
-                st.progress(abo/tot if tot > 0 else 0)
-                st.markdown(f"Restan: **${(tot-abo):.2f}**</div>", unsafe_allow_html=True)
-
-# --- 6. LOGIN ---
-else:
-    st.write("<br><br>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1, 1.5, 1])
-    with c2:
-        st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
-        t1, t2 = st.tabs(["Ingresar", "Registrarse"])
-        with t1:
-            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-            if st.button("Entrar", use_container_width=True):
-                if le == "admin" and lp == "admin123":
-                    st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                if u: st.session_state.usuario_identificado = u; st.rerun()
-                else: st.error("Credenciales incorrectas")
-        with t2:
-            with st.form("signup"):
-                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                if st.form_submit_button("Crear Cuenta"):
-                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
+                        <div style="font-size:0.9em; margin:10px 0
