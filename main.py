@@ -258,19 +258,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
         st.subheader("📊 Resumen General")
         if st.session_state.inventario:
             df_res = pd.DataFrame(st.session_state.inventario)
-            
-            # --- SECCIÓN DE MÉTRICAS SUPERIORES ---
-            m_alm = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
-            m_tra = len(df_res[df_res['Estado'] == "EN TRANSITO"])
-            m_ent = len(df_res[df_res['Estado'] == "ENTREGADO"])
-            
-            c_m1, c_m2, c_m3 = st.columns(3)
-            with c_m1: st.metric("📦 En Almacén", m_alm)
-            with c_m2: st.metric("✈️ En Tránsito", m_tra)
-            with c_m3: st.metric("✅ Entregados", m_ent)
-            st.write("---")
-
-            busq_res = st.text_input("🔍 Buscar caja por ID:", key="res_search")
+            busq_res = st.text_input("🔍 Buscar caja:", key="res_search")
             if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
             
             estados = {"RECIBIDO ALMACEN PRINCIPAL": "📦 Almacén", "EN TRANSITO": "✈️ Tránsito", "ENTREGADO": "✅ Entregado"}
@@ -289,7 +277,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                         </div>
                     """, unsafe_allow_html=True)
 
-# --- 5. PANEL DEL CLIENTE ---
+# --- 5. PANEL DEL CLIENTE (ACTUALIZADO CON ICONOS) ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -301,6 +289,7 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
             with (col_p1 if i % 2 == 0 else col_p2):
                 tot = p['Monto_USD']; abo = p.get('Abonado', 0.0); uni = "Pies" if p.get('Tipo_Traslado') == "Marítimo" else "Kg"
                 badge = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                # Lógica de icono según tipo de traslado
                 icon_cli = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 
                 st.markdown(f"""
