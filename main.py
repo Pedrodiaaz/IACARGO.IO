@@ -39,8 +39,7 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- CAMBIO QUIRÚRGICO: BOTÓN DE FORMULARIO AZUL PERMANENTE --- */
-    /* Este selector afecta al botón de "Registrar en Sistema" y cualquier submit de formulario */
+    /* BOTÓN DE REGISTRO AZUL PERMANENTE */
     div[data-testid="stForm"]  button {
         background-color: #2563eb !important;
         background-image: none !important;
@@ -51,7 +50,6 @@ st.markdown("""
         font-weight: 700 !important;
         text-transform: uppercase;
     }
-    /* Evita que cambie al pasar el cursor o hacer click */
     div[data-testid="stForm"]  button:hover, 
     div[data-testid="stForm"]  button:active, 
     div[data-testid="stForm"]  button:focus {
@@ -97,7 +95,6 @@ st.markdown("""
     .badge-paid { background: linear-gradient(90deg, #059669, #10b981); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     .badge-debt { background: linear-gradient(90deg, #dc2626, #f87171); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     
-    /* BOTONES GENERALES (No afectados por la regla del formulario) */
     .stButton>button {
         border-radius: 12px !important;
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
@@ -162,8 +159,11 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             f_id = st.text_input("ID Tracking / Guía")
             f_cli = st.text_input("Nombre del Cliente")
             f_cor = st.text_input("Correo del Cliente")
+            
+            # CAMBIO DE POSICIÓN AQUÍ:
+            f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"])
             f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
-            f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"]) 
+            
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
             if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
