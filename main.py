@@ -186,74 +186,41 @@ def render_admin_dashboard():
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_aud:
-        st.subheader("🔍 Auditoría y Edición Full")
-        ver_pap = st.checkbox("🗑️ Ver Papelera", key="ver_papelera_check")
-        
-        if ver_pap:
+        st.subheader("🔍 Auditoría y Edición")
+        if st.checkbox("🗑️ Ver Papelera"):
             if st.session_state.papelera:
-                guia_res = st.selectbox("Restaurar ID de Papelera:", [p["ID_Barra"] for p in st.session_state.papelera])
-                if st.button("♻️ Restaurar Guía Seleccionada"):
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar Guía"):
                     paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
-            else: st.info("La papelera está vacía.")
         else:
-            busq_aud = st.text_input("🔍 Buscar por Guía para editar:", key="aud_search_bar")
+            busq_aud = st.text_input("🔍 Buscar por Guía:", key="aud_search")
             df_aud = pd.DataFrame(st.session_state.inventario)
             if busq_aud: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False)]
-            
             st.dataframe(df_aud, use_container_width=True)
-            
             if st.session_state.inventario:
-                st.markdown("---")
-                guia_ed = st.selectbox("Seleccione ID para Editar/Eliminar:", [p["ID_Barra"] for p in st.session_state.inventario], key="aud_edit_sel")
-                paq_ed = next((p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed), None)
-                
-                if paq_ed:
-                    with st.container():
-                        st.markdown(f"### Editando: {paq_ed['ID_Barra']}")
-                        c1, c2, c3 = st.columns(3)
-                        with c1: 
-                            n_cli = st.text_input("Nombre Cliente", value=paq_ed['Cliente'], key=f"edit_cli_{paq_ed['ID_Barra']}")
-                        with c2: 
-                            n_pes = st.number_input("Peso/Medida Real", value=float(paq_ed['Peso_Almacen']), key=f"edit_pes_{paq_ed['ID_Barra']}")
-                        with c3: 
-                            n_tra = st.selectbox("Traslado", ["Aéreo", "Marítimo"], 
-                                               index=0 if paq_ed.get('Tipo_Traslado') == "Aéreo" else 1, 
-                                               key=f"edit_tra_{paq_ed['ID_Barra']}")
-                        
-                        col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1:
-                            if st.button("💾 Guardar Cambios en Guía", key=f"save_aud_{paq_ed['ID_Barra']}"):
-                                paq_ed.update({
-                                    'Cliente': n_cli,
-                                    'Peso_Almacen': n_pes,
-                                    'Tipo_Traslado': n_tra,
-                                    'Monto_USD': n_pes * PRECIO_POR_UNIDAD
-                                })
-                                guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                                st.success("Datos actualizados.")
-                                st.rerun()
-                        with col_btn2:
-                            if st.button("🗑️ Enviar a Papelera", key=f"del_aud_{paq_ed['ID_Barra']}"):
-                                st.session_state.papelera.append(paq_ed)
-                                st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
-                                guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                                guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA)
-                                st.rerun()
+                guia_ed = st.selectbox("Seleccione ID para Editar:", [p["ID_Barra"] for p in st.session_state.inventario], key="aud_ed_sel")
+                paq_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed)
+                with st.container():
+                    c1, c2, c3 = st.columns(3)
+                    with c1: n_cli = st.text_input("Cliente", value=paq_ed['Cliente'], key=f"e_c_{paq_ed['ID_Barra']}")
+                    with c2: n_pes = st.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"e_p_{paq_ed['ID_Barra']}")
+                    with c3: n_tra = st.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"e_t_{paq_ed['ID_Barra']}")
+                    if st.button("💾 Guardar"):
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_res:
         st.subheader("📊 Resumen por Estatus")
         busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search_admin")
         df_res = pd.DataFrame(st.session_state.inventario)
         if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
-        
         for est_k, est_l in [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN"), ("EN TRANSITO", "✈️ EN TRÁNSITO"), ("ENTREGADO", "✅ ENTREGADO")]:
             df_f = df_res[df_res['Estado'] == est_k]
             st.markdown(f'<div class="header-resumen">{est_l} ({len(df_f)})</div>', unsafe_allow_html=True)
             for _, r in df_f.iterrows():
-                # Icono dinámico según traslado
                 icon = "✈️" if r.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 st.markdown(f'<div class="resumen-row"><div class="resumen-id">{icon} {r["ID_Barra"]}</div><div class="resumen-cliente">{r["Cliente"]}</div><div class="resumen-data">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
@@ -271,60 +238,79 @@ def render_client_dashboard():
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
-                tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0))
+                # DATOS FINANCIEROS CLAVE
+                tot = float(p.get('Monto_USD', 0.0))
+                abo = float(p.get('Abonado', 0.0))
+                restante = tot - abo
+                porcentaje = (abo / tot * 100) if tot > 0 else 0
+                
                 badge = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
-                # Lógica de ICONO para el CLIENTE
-                tipo_icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 
                 st.markdown(f"""
                     <div class="p-card">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="color:#60a5fa; font-weight:bold;">{tipo_icon} #{p['ID_Barra']}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#60a5fa; font-weight:bold; font-size:1.2em;">{icon} #{p['ID_Barra']}</span>
                             <span class="{badge}">{p.get('Pago')}</span>
                         </div>
-                        <div style="font-size:0.9em; margin:10px 0;">📍 <b>Estatus:</b> {p['Estado']}</div>
-                        <div style="font-size:0.85em; color:#a78bfa; margin-bottom:10px;">💳 <b>Pago:</b> {p.get('Modalidad', 'No especificada')}</div>
+                        <div style="font-size:0.95em; margin:12px 0;">
+                            📍 <b>Estatus:</b> {p['Estado']}<br>
+                            💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); border-radius:10px; padding:10px; margin-top:10px;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:5px;">
+                                <span>Progreso de Pago</span>
+                                <span>{porcentaje:.1f}%</span>
+                            </div>
                 """, unsafe_allow_html=True)
+                
+                # BARRA DE PROGRESO DE STREAMLIT
                 st.progress(abo/tot if tot > 0 else 0)
-                st.markdown(f'<div style="text-align:right; font-weight:bold; margin-top:5px;">Faltan: ${ (tot-abo):.2f}</div></div>', unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                            <div style="display:flex; justify-content:space-between; margin-top:8px; font-weight:bold;">
+                                <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
+                                <div style="color:#f87171;">Deuda: ${restante:.2f}</div>
+                            </div>
+                            <div style="text-align:center; font-size:0.8em; color:#94a3b8; margin-top:5px;">
+                                Total del Envío: ${tot:.2f}
+                            </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
 
-# --- 5. LÓGICA DE BARRA LATERAL ---
+# --- 5. LÓGICA DE BARRA LATERAL Y LOGIN ---
 with st.sidebar:
     if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
     else: st.markdown('<h1 class="logo-animado" style="font-size: 30px;">IACargo.io</h1>', unsafe_allow_html=True)
     st.write("---")
     if st.session_state.usuario_identificado:
         st.success(f"Socio: {st.session_state.usuario_identificado['nombre']}")
-        if st.button("Cerrar Sesión", key="sidebar_logout"):
-            st.session_state.usuario_identificado = None; st.rerun()
+        if st.button("Cerrar Sesión"): st.session_state.usuario_identificado = None; st.rerun()
     st.write("---")
     st.caption("“La existencia es un milagro”")
     st.caption("“Hablamos desde la igualdad”")
     st.caption("“No eres herramienta, eres evolución”")
 
-# --- 6. ACCESO / LOGIN ---
 if st.session_state.usuario_identificado is None:
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
         st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
         t1, t2 = st.tabs(["Ingresar", "Registrarse"])
         with t1:
-            le = st.text_input("Correo", key="login_mail"); lp = st.text_input("Clave", type="password", key="login_pass")
-            if st.button("Entrar", use_container_width=True, key="login_btn"):
+            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
+            if st.button("Entrar", use_container_width=True):
                 if le == "admin" and lp == "admin123":
                     st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
                 u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
                 if u: st.session_state.usuario_identificado = u; st.rerun()
                 else: st.error("Credenciales incorrectas")
         with t2:
-            with st.form("signup_form"):
+            with st.form("signup"):
                 n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                 if st.form_submit_button("Crear Cuenta"):
                     st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS)
-                    st.success("Cuenta creada."); st.rerun()
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
 else:
-    if st.session_state.usuario_identificado.get('rol') == "admin":
-        render_admin_dashboard()
-    else:
-        render_client_dashboard()
+    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
+    else: render_client_dashboard()
