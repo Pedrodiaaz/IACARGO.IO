@@ -275,4 +275,4 @@ else:
                 n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                 if st.form_submit_button("Crear Cuenta"):
                     st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Regi
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Registrado."); st.rerun()
