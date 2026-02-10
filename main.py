@@ -234,4 +234,64 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 if paq_ed:
                     c1, c2, c3 = st.columns(3)
                     with c1: new_cli = st.text_input("Cliente", value=paq_ed['Cliente'])
-                    with c2
+                    with c2: new_pes = st.number_input("Peso Almacén", value=float(paq_ed['Peso_Almacen']))
+                    with c3: new_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed.get('Tipo_Traslado')=="Aéreo" else 1)
+                    if st.button("💾 Guardar Cambios"):
+                        paq_ed.update({'Cliente': new_cli, 'Peso_Almacen': new_pes, 'Tipo_Traslado': new_tra, 'Monto_USD': new_pes*PRECIO_POR_KG})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                    st.markdown('<div class="btn-eliminar">', unsafe_allow_html=True)
+                    if st.button("🗑️ Enviar a Papelera"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+    with t_res:
+        st.subheader("📊 Resumen General de Operaciones")
+        if st.session_state.inventario:
+            df_res = pd.DataFrame(st.session_state.inventario)
+            busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search")
+            if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
+            
+            cant_almacen = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
+            cant_transito = len(df_res[df_res['Estado'] == "EN TRANSITO"])
+            cant_entregados = len(df_res[df_res['Estado'] == "ENTREGADO"])
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("📦 En Almacén", f"{cant_almacen} Paq.")
+            m2.metric("✈️ En Tránsito", f"{cant_transito} Paq.")
+            m3.metric("✅ Entregados", f"{cant_entregados} Paq.")
+            st.write("---")
+            
+            estados_mapeo = {"RECIBIDO ALMACEN PRINCIPAL": "📦 Mercancía en Almacén", "EN TRANSITO": "✈️ Mercancía en Tránsito", "ENTREGADO": "✅ Mercancía Entregada"}
+            for est_key, est_label in estados_mapeo.items():
+                df_f = df_res[df_res['Estado'] == est_key].copy()
+                st.markdown(f'<div class="header-resumen">{est_label} ({len(df_f)})</div>', unsafe_allow_html=True)
+                if not df_f.empty:
+                    for _, row in df_f.iterrows():
+                        icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                        st.markdown(f'<div class="resumen-row"><div class="resumen-id">{icon} {row["ID_Barra"]}</div><div class="resumen-cliente">{row["Cliente"]}</div><div class="resumen-data">{row["Peso_Almacen"]:.1f} Kg | {row["Pago"]} | ${row["Abonado"]:.2f}</div></div>', unsafe_allow_html=True)
+                else: st.caption("No hay registros.")
+
+# --- 5. PANEL DEL CLIENTE / ACCESO ---
+else:
+    # (El código de login se mantiene igual para permitir el acceso)
+    st.write("<br><br>", unsafe_allow_html=True)
+    col_l1, col_l2, col_l3 = st.columns([1, 1.5, 1])
+    with col_l2:
+        st.markdown('<div style="text-align: center;"><div class="logo-animado" style="font-size: 70px;">IACargo.io</div><p style="color: #a78bfa !important;">“Trabajamos para conectarte en todas partes del mundo”</p></div>', unsafe_allow_html=True)
+        t1, t2 = st.tabs(["Ingresar", "Registro"])
+        with t1:
+            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
+            if st.button("Iniciar Sesión", use_container_width=True):
+                if le == "admin" and lp == "admin123":
+                    st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
+                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
+                if u: st.session_state.usuario_identificado = u; st.rerun()
+                else: st.error("Acceso denegado")
+        with t2:
+            with st.form("signup"):
+                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
+                if st.form_submit_button("Crear Cuenta"):
+                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Registrado."); st.rerun()
