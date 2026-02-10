@@ -76,16 +76,27 @@ st.markdown("""
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
     .badge-paid { background: linear-gradient(90deg, #059669, #10b981); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     .badge-debt { background: linear-gradient(90deg, #dc2626, #f87171); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
-    .stButton>button {
-        border-radius: 12px !important;
-        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+    
+    /* OPTIMIZACIÓN DEL BOTÓN DE REGISTRO Y BOTONES GENERALES */
+    div.stButton > button:first-child {
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
-        border: none !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-        width: 100% !important;
+        border: 1px solid #60a5fa !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 10px 24px !important;
+        transition: all 0.3s ease-in-out !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
-    .btn-eliminar button { background: linear-gradient(90deg, #ef4444, #b91c1c) !important; }
+    div.stButton > button:first-child:hover {
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+        transform: translateY(-2px);
+    }
+    
+    .btn-eliminar button { background: linear-gradient(90deg, #ef4444, #b91c1c) !important; border: none !important; }
     [data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
     """, unsafe_allow_html=True)
