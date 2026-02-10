@@ -50,13 +50,6 @@ st.markdown("""
         font-weight: 700 !important;
         text-transform: uppercase;
     }
-    div[data-testid="stForm"]  button:hover, 
-    div[data-testid="stForm"]  button:active, 
-    div[data-testid="stForm"]  button:focus {
-        background-color: #2563eb !important;
-        color: white !important;
-        border: 1px solid #60a5fa !important;
-    }
 
     .header-resumen {
         background: linear-gradient(90deg, #2563eb, #1e40af);
@@ -186,7 +179,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             u_medida = "Pies Cúbicos" if paq.get('Tipo_Traslado') == "Marítimo" else "Kg"
             st.info(f"Cliente: {paq['Cliente']} | Reportado: {paq['Peso_Mensajero']} {u_medida}")
             
-            # --- LÍNEA CORREGIDA AQUÍ ---
             peso_real = st.number_input(f"Medida Real en Almacén ({u_medida})", min_value=0.0, value=float(paq['Peso_Mensajero']), step=0.1)
             
             if st.button("⚖️ Confirmar y Validar"):
@@ -268,6 +260,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                 df_f = df_res[df_res['Estado'] == est_key].copy()
                 st.markdown(f'<div class="header-resumen">{est_label} ({len(df_f)})</div>', unsafe_allow_html=True)
                 for _, row in df_f.iterrows():
+                    # --- ICONO DINÁMICO EN RESUMEN ---
                     icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
                     u_r = "Pies" if row.get('Tipo_Traslado') == "Marítimo" else "Kg"
                     st.markdown(f"""
@@ -290,10 +283,12 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
             with (col_p1 if i % 2 == 0 else col_p2):
                 tot = p['Monto_USD']; abo = p.get('Abonado', 0.0); uni = "Pies" if p.get('Tipo_Traslado') == "Marítimo" else "Kg"
                 badge = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                # --- ICONO DINÁMICO EN PANEL CLIENTE ---
+                icon_cli = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 st.markdown(f"""
                     <div class="p-card">
                         <div style="display:flex; justify-content:space-between;">
-                            <span style="color:#60a5fa; font-weight:bold;">#{p['ID_Barra']}</span>
+                            <span style="color:#60a5fa; font-weight:bold; font-size:1.2em;">{icon_cli} #{p['ID_Barra']}</span>
                             <span class="{badge}">{p.get('Pago')}</span>
                         </div>
                         <div style="font-size:0.9em; margin:10px 0;">
@@ -302,7 +297,10 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                         </div>
                 """, unsafe_allow_html=True)
                 st.progress(abo/tot if tot > 0 else 0)
-                st.markdown(f"Restan: **${(tot-abo):.2f}**</div>", unsafe_allow_html=True)
+                st.markdown(f"""<div style="display:flex; justify-content:space-between; font-size:0.85em;">
+                            <span>Abonado: <b>${abo:.2f}</b></span>
+                            <span style="color:#f87171;">Resta: <b>${(tot-abo):.2f}</b></span>
+                        </div></div>""", unsafe_allow_html=True)
 
 # --- 6. LOGIN ---
 else:
