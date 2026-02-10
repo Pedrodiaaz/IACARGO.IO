@@ -306,4 +306,6 @@ else:
         with t2:
             with st.form("signup"):
                 n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                if st.form
+                if st.form_submit_button("Crear mi cuenta evolucionada"):
+                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("¡Bienvenido socio!"); st.rerun()
