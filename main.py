@@ -38,7 +38,20 @@ st.markdown("""
         margin-bottom: 15px;
         color: white !important;
     }
-    /* ESTILO QUIRÚRGICO PARA CHEQUEO VISUAL EN RESUMEN */
+
+    /* ESTILO PARA LOS ENCABEZADOS DE ESTADO EN RESUMEN */
+    .header-resumen {
+        background: linear-gradient(90deg, #2563eb, #1e40af);
+        color: white !important;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 1.1em;
+        margin: 10px 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        border-left: 6px solid #60a5fa;
+    }
+
     .resumen-row {
         background-color: #ffffff !important;
         color: #1e293b !important;
@@ -227,7 +240,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             
             st.write("---")
             
-            # --- SECCIONES DESPLEGABLES (MODIFICACIÓN QUIRÚRGICA) ---
+            # --- SECCIONES POR ESTADO CON CABECERA AZUL ---
             estados_mapeo = {
                 "RECIBIDO ALMACEN PRINCIPAL": "📦 Mercancía en Almacén",
                 "EN TRANSITO": "✈️ Mercancía en Tránsito",
@@ -236,23 +249,23 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
 
             for est_key, est_label in estados_mapeo.items():
                 df_f = df_res[df_res['Estado'] == est_key].copy()
-                # El expander crea la flecha y el efecto desplegable
-                with st.expander(f"{est_label} ({len(df_f)})", expanded=True):
-                    if not df_f.empty:
-                        for _, row in df_f.iterrows():
-                            # Cada renglón con fondo blanco y líneas
-                            icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
-                            st.markdown(f"""
-                                <div class="resumen-row">
-                                    <div class="resumen-id">{icon} {row['ID_Barra']}</div>
-                                    <div class="resumen-cliente">{row['Cliente']}</div>
-                                    <div class="resumen-data">
-                                        {row['Peso_Almacen']:.1f} Kg | {row['Pago']} | ${row['Abonado']:.2f}
-                                    </div>
+                # Cabecera Visual Azul
+                st.markdown(f'<div class="header-resumen">{est_label} ({len(df_f)})</div>', unsafe_allow_html=True)
+                
+                if not df_f.empty:
+                    for _, row in df_f.iterrows():
+                        icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                        st.markdown(f"""
+                            <div class="resumen-row">
+                                <div class="resumen-id">{icon} {row['ID_Barra']}</div>
+                                <div class="resumen-cliente">{row['Cliente']}</div>
+                                <div class="resumen-data">
+                                    {row['Peso_Almacen']:.1f} Kg | {row['Pago']} | ${row['Abonado']:.2f}
                                 </div>
-                            """, unsafe_allow_html=True)
-                    else:
-                        st.caption("No hay mercancía en este estado.")
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.caption("No hay registros en este estado.")
 
 # --- 5. PANEL DEL CLIENTE ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
