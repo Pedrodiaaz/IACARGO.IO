@@ -38,6 +38,22 @@ st.markdown("""
         margin-bottom: 15px;
         color: white !important;
     }
+    /* ESTILO QUIRÚRGICO PARA CHEQUEO VISUAL EN RESUMEN */
+    .resumen-row {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        padding: 15px;
+        border-bottom: 2px solid #cbd5e1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+        border-radius: 4px;
+    }
+    .resumen-id { font-weight: 800; color: #2563eb; width: 150px; }
+    .resumen-cliente { flex-grow: 1; font-weight: 500; font-size: 1.1em; }
+    .resumen-data { font-weight: 700; color: #475569; text-align: right; }
+    
     .welcome-text { 
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
@@ -47,12 +63,6 @@ st.markdown("""
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
     .badge-paid { background: linear-gradient(90deg, #059669, #10b981); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     .badge-debt { background: linear-gradient(90deg, #dc2626, #f87171); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
-    .state-header {
-        background: rgba(255, 255, 255, 0.1);
-        border-left: 5px solid #3b82f6;
-        color: #60a5fa !important; padding: 12px; border-radius: 8px; margin: 20px 0; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 1px;
-    }
     .stButton>button {
         border-radius: 12px !important;
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
@@ -118,7 +128,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             f_cli = st.text_input("Nombre del Cliente")
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input("Peso Mensajero (Kg)", min_value=0.0, step=0.1)
-            f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"]) # Cambio Quirúrgico 1
+            f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"]) 
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
             if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
@@ -126,7 +136,7 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
                         "ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), 
                         "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, 
                         "Monto_USD": f_pes*PRECIO_POR_KG, "Estado": "RECIBIDO ALMACEN PRINCIPAL", 
-                        "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, # Cambio Quirúrgico 2
+                        "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, 
                         "Abonado": 0.0, "Fecha_Registro": datetime.now()
                     }
                     st.session_state.inventario.append(nuevo)
@@ -215,13 +225,34 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             m2.metric("Paquetes", len(df_res))
             m3.metric("Caja (Abonos)", f"${df_res['Abonado'].sum():.2f}")
             
-            for est in ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"]:
-                df_f = df_res[df_res['Estado'] == est].copy()
-                st.markdown(f'<div class="state-header"> {est} ({len(df_f)})</div>', unsafe_allow_html=True)
-                if not df_f.empty:
-                    # Cambio Quirúrgico 3: Iconos en la tabla
-                    df_f['Ref'] = df_f.apply(lambda x: f"{'✈️' if x.get('Tipo_Traslado') == 'Aéreo' else '🚢'} {x['ID_Barra']}", axis=1)
-                    st.table(df_f[['Ref', 'Cliente', 'Peso_Almacen', 'Pago', 'Abonado']])
+            st.write("---")
+            
+            # --- SECCIONES DESPLEGABLES (MODIFICACIÓN QUIRÚRGICA) ---
+            estados_mapeo = {
+                "RECIBIDO ALMACEN PRINCIPAL": "📦 Mercancía en Almacén",
+                "EN TRANSITO": "✈️ Mercancía en Tránsito",
+                "ENTREGADO": "✅ Mercancía Entregada"
+            }
+
+            for est_key, est_label in estados_mapeo.items():
+                df_f = df_res[df_res['Estado'] == est_key].copy()
+                # El expander crea la flecha y el efecto desplegable
+                with st.expander(f"{est_label} ({len(df_f)})", expanded=True):
+                    if not df_f.empty:
+                        for _, row in df_f.iterrows():
+                            # Cada renglón con fondo blanco y líneas
+                            icon = "✈️" if row.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                            st.markdown(f"""
+                                <div class="resumen-row">
+                                    <div class="resumen-id">{icon} {row['ID_Barra']}</div>
+                                    <div class="resumen-cliente">{row['Cliente']}</div>
+                                    <div class="resumen-data">
+                                        {row['Peso_Almacen']:.1f} Kg | {row['Pago']} | ${row['Abonado']:.2f}
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.caption("No hay mercancía en este estado.")
 
 # --- 5. PANEL DEL CLIENTE ---
 elif st.session_state.usuario_identificado and st.session_state.usuario_identificado.get('rol') == "cliente":
@@ -237,7 +268,6 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
             with (col_paq1 if i % 2 == 0 else col_paq2):
                 total = p['Monto_USD']; abonado = p.get('Abonado', 0.0); pago_s = p.get('Pago', 'PENDIENTE')
                 badge = "badge-paid" if pago_s == "PAGADO" else "badge-debt"
-                # Cambio Quirúrgico 4: Iconos en Card de Cliente
                 icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 st.markdown(f"""
                     <div class="p-card">
@@ -245,34 +275,4 @@ elif st.session_state.usuario_identificado and st.session_state.usuario_identifi
                             <span style="font-weight:bold; color:#60a5fa; font-size:1.2em; font-style:italic;">{icon} #{p['ID_Barra']}</span>
                             <span class="{badge}">{pago_s}</span>
                         </div>
-                        <div style="font-size: 0.9em; margin: 12px 0; color:#e2e8f0;">
-                            📍 <b>Estado:</b> {p['Estado']}<br>
-                            ⚖️ <b>Peso:</b> {p['Peso_Almacen'] if p['Validado'] else p['Peso_Mensajero']:.1f} Kg | 💳 {p.get('Modalidad')}
-                        </div>
-                """, unsafe_allow_html=True)
-                st.progress(abonado/total if total > 0 else 0)
-                st.markdown(f"""<div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-top: 8px;">
-                            <span>Abonado: <b>${abonado:.2f}</b></span><span style="color:#f87171;">Resta: <b>${(total-abonado):.2f}</b></span>
-                        </div></div>""", unsafe_allow_html=True)
-
-# --- 6. ACCESO (LOGIN) ---
-else:
-    st.write("<br><br>", unsafe_allow_html=True)
-    col_l1, col_l2, col_l3 = st.columns([1, 1.5, 1])
-    with col_l2:
-        st.markdown('<div style="text-align: center;"><div class="logo-animado" style="font-size: 70px;">IACargo.io</div><p style="color: #a78bfa !important;">“Trabajamos para conectarte en todas partes del mundo”</p></div>', unsafe_allow_html=True)
-        t1, t2 = st.tabs(["Ingresar", "Registro"])
-        with t1:
-            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-            if st.button("Iniciar Sesión", use_container_width=True):
-                if le == "admin" and lp == "admin123":
-                    st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                if u: st.session_state.usuario_identificado = u; st.rerun()
-                else: st.error("Error")
-        with t2:
-            with st.form("signup"):
-                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                if st.form_submit_button("Crear Cuenta"):
-                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Registrado."); st.rerun()
+                        <div style="font-size: 0.9em; margin
