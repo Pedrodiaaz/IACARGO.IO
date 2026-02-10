@@ -39,7 +39,27 @@ st.markdown("""
         color: white !important;
     }
 
-    /* ESTILO PARA LOS ENCABEZADOS DE ESTADO EN RESUMEN */
+    /* --- CAMBIO QUIRÚRGICO: BOTÓN DE FORMULARIO AZUL PERMANENTE --- */
+    /* Este selector afecta al botón de "Registrar en Sistema" y cualquier submit de formulario */
+    div[data-testid="stForm"]  button {
+        background-color: #2563eb !important;
+        background-image: none !important;
+        color: white !important;
+        border: 1px solid #60a5fa !important;
+        opacity: 1 !important;
+        transition: none !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+    }
+    /* Evita que cambie al pasar el cursor o hacer click */
+    div[data-testid="stForm"]  button:hover, 
+    div[data-testid="stForm"]  button:active, 
+    div[data-testid="stForm"]  button:focus {
+        background-color: #2563eb !important;
+        color: white !important;
+        border: 1px solid #60a5fa !important;
+    }
+
     .header-resumen {
         background: linear-gradient(90deg, #2563eb, #1e40af);
         color: white !important;
@@ -76,6 +96,8 @@ st.markdown("""
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
     .badge-paid { background: linear-gradient(90deg, #059669, #10b981); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
     .badge-debt { background: linear-gradient(90deg, #dc2626, #f87171); color: white !important; padding: 5px 12px; border-radius: 12px; font-weight: bold; font-size: 11px; }
+    
+    /* BOTONES GENERALES (No afectados por la regla del formulario) */
     .stButton>button {
         border-radius: 12px !important;
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
@@ -233,7 +255,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search")
             if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
             
-            # --- CÁLCULO DE CANTIDADES POR ESTADO ---
             cant_almacen = len(df_res[df_res['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"])
             cant_transito = len(df_res[df_res['Estado'] == "EN TRANSITO"])
             cant_entregados = len(df_res[df_res['Estado'] == "ENTREGADO"])
@@ -245,7 +266,6 @@ if st.session_state.usuario_identificado and st.session_state.usuario_identifica
             
             st.write("---")
             
-            # --- SECCIONES POR ESTADO CON CABECERA AZUL ---
             estados_mapeo = {
                 "RECIBIDO ALMACEN PRINCIPAL": "📦 Mercancía en Almacén",
                 "EN TRANSITO": "✈️ Mercancía en Tránsito",
