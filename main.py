@@ -175,4 +175,27 @@ elif st.session_state.usuario_identificado:
         icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
         p_status = p.get('Pago', 'PENDIENTE')
         badge = "badge-paid" if p_status == "PAGADO" else "badge-pending"
-        st.markdown(f'<div class="p-card"><span class="{badge}">{p_status}</span><br><b>{icon} #{p["ID_Barra"]}</b><br>Estado: {p["Estado"]}<br>Deuda: ${(p["Monto_USD"]-p["Abonado"]):.2f}</div>', unsafe_allow_
+        st.markdown(f'<div class="p-card"><span class="{badge}">{p_status}</span><br><b>{icon} #{p["ID_Barra"]}</b><br>Estado: {p["Estado"]}<br>Deuda: ${(p["Monto_USD"]-p["Abonado"]):.2f}</div>', unsafe_allow_html=True)
+        if p['Monto_USD'] > 0: st.progress(min(p['Abonado']/p['Monto_USD'], 1.0))
+
+# --- 6. ACCESO / LOGIN (RESTAURADO) ---
+else:
+    st.write("<br><br>", unsafe_allow_html=True)
+    col_l1, col_l2, col_l3 = st.columns([1, 1.8, 1])
+    with col_l2:
+        st.markdown('<div style="text-align: center;"><div class="logo-animado" style="font-size: 80px;">IACargo.io</div><p style="color: #a78bfa !important;">“Evolución Logística a tu Alcance”</p></div>', unsafe_allow_html=True)
+        t_login, t_sign = st.tabs(["Ingresar", "Registro"])
+        with t_login:
+            le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
+            if st.button("Iniciar Sesión", use_container_width=True):
+                if le == "admin" and lp == "admin123":
+                    st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
+                u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
+                if u: st.session_state.usuario_identificado = u; st.rerun()
+                else: st.error("Acceso denegado.")
+        with t_sign:
+            with st.form("signup_restored"):
+                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
+                if st.form_submit_button("Crear mi cuenta"):
+                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("¡Cuenta lista!"); st.rerun()
