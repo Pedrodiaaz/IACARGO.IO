@@ -57,7 +57,6 @@ st.markdown("""
         transform: none !important;
     }
 
-    /* Estilo para los indicadores superiores */
     .metric-container {
         background: rgba(255, 255, 255, 0.1);
         padding: 15px;
@@ -129,7 +128,6 @@ def render_admin_dashboard():
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res = tabs
 
-    # Pestañas anteriores (Reg, Val, Cob, Est, Aud) se mantienen intactas...
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"], key="admin_reg_tra")
@@ -188,26 +186,43 @@ def render_admin_dashboard():
 
     with t_aud:
         st.subheader("🔍 Auditoría y Edición")
-        busq_aud = st.text_input("🔍 Buscar por Guía:", key="aud_search")
-        df_aud = pd.DataFrame(st.session_state.inventario)
-        if busq_aud: df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False)]
-        st.dataframe(df_aud, use_container_width=True)
-        if st.session_state.inventario:
-            guia_ed = st.selectbox("Editar ID:", [p["ID_Barra"] for p in st.session_state.inventario], key="ed_sel")
-            paq_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed)
-            c1, c2, c3 = st.columns(3)
-            n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
-            n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
-            n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
-            if st.button("💾 Guardar Cambios"):
-                paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+        if st.checkbox("🗑️ Ver Papelera"):
+            if st.session_state.papelera:
+                guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ Restaurar Guía"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("La papelera está vacía.")
+        else:
+            busq_aud = st.text_input("🔍 Buscar por Guía en Auditoría:", key="aud_search_input")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if not df_aud.empty and busq_aud: 
+                df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False)]
+            st.dataframe(df_aud, use_container_width=True)
+            
+            if st.session_state.inventario:
+                st.write("---")
+                guia_ed = st.selectbox("Seleccione ID para Editar o Eliminar:", [p["ID_Barra"] for p in st.session_state.inventario], key="ed_sel")
+                paq_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed)
+                with st.container():
+                    c1, c2, c3 = st.columns(3)
+                    n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
+                    n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
+                    n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
+                    
+                    b1, b2 = st.columns(2)
+                    if b1.button("💾 Guardar Cambios"):
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados."); st.rerun()
+                    if b2.button("🗑️ Enviar a Papelera"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # RESUMEN OPTIMIZADO CON DESPLEGABLES
     with t_res:
         st.subheader("📊 Resumen General de Carga")
-        
-        # Panel de métricas superiores
         df_full = pd.DataFrame(st.session_state.inventario)
         c_alm = len(df_full[df_full['Estado'] == "RECIBIDO ALMACEN PRINCIPAL"]) if not df_full.empty else 0
         c_tra = len(df_full[df_full['Estado'] == "EN TRANSITO"]) if not df_full.empty else 0
@@ -221,29 +236,21 @@ def render_admin_dashboard():
 
         busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search_admin")
         df_res = pd.DataFrame(st.session_state.inventario)
-        if busq_res: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
+        if busq_res and not df_res.empty: 
+            df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
         
-        # --- SECCIONES DESPLEGABLES (EXPANDERS) ---
         for est_k, est_l, icon_label in [
             ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN", "Almacén"),
             ("EN TRANSITO", "✈️ EN TRÁNSITO", "Tránsito"),
             ("ENTREGADO", "✅ ENTREGADO", "Entregado")
         ]:
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
-            
-            # El expander muestra el nombre del estado y la cantidad
             with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
-                if df_f.empty:
-                    st.write("No hay paquetes en este estado.")
-                for _, r in df_f.iterrows():
-                    icon_t = "✈️" if r.get('Tipo_Traslado') == "Aéreo" else "🚢"
-                    st.markdown(f"""
-                        <div class="resumen-row">
-                            <div class="resumen-id">{icon_t} {r["ID_Barra"]}</div>
-                            <div class="resumen-cliente">{r["Cliente"]}</div>
-                            <div class="resumen-data">${float(r["Abonado"]):.2f}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                if df_f.empty: st.write("No hay paquetes.")
+                else:
+                    for _, r in df_f.iterrows():
+                        icon_t = "✈️" if r.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                        st.markdown(f'<div class="resumen-row"><div class="resumen-id">{icon_t} {r["ID_Barra"]}</div><div class="resumen-cliente">{r["Cliente"]}</div><div class="resumen-data">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
 # --- 4. INTERFAZ CLIENTE ---
 def render_client_dashboard():
