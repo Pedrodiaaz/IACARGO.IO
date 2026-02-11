@@ -41,20 +41,29 @@ st.markdown("""
         color: white !important;
     }
 
-    /* BOTONES AZULES ESTÁTICOS (Login y Registro Admin) */
-    div[data-testid="stForm"] button {
-        background-color: #2563eb !important;
+    /* --- CIRUGÍA QUIRÚRGICA EN BOTONES --- */
+    /* Botones Globales y de Formulario */
+    .stButton button, div[data-testid="stForm"] button {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important;
         font-weight: 700 !important;
         text-transform: uppercase !important;
         border: none !important;
-        transition: none !important;
-        box-shadow: none !important;
+        padding: 10px 24px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3) !important;
+        width: 100% !important;
     }
-    div[data-testid="stForm"] button:hover {
-        background-color: #2563eb !important;
-        transform: none !important;
+    
+    .stButton button:hover, div[data-testid="stForm"] button:hover {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
+    }
+
+    .stButton button:active, div[data-testid="stForm"] button:active {
+        transform: translateY(0px) !important;
     }
 
     .metric-container {
@@ -129,8 +138,8 @@ def render_admin_dashboard():
 
     with t_reg:
         st.subheader("Registro de Entrada")
-        f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo"], key="admin_reg_tra")
-        label_din = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso Mensajero (Kg)"
+        f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], key="admin_reg_tra")
+        label_din = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso (Kg / Lbs)"
         with st.form("reg_form", clear_on_submit=True):
             st.info(f"ID sugerido: **{st.session_state.id_actual}**")
             f_id = st.text_input("ID Tracking / Guía", value=st.session_state.id_actual)
@@ -205,7 +214,7 @@ def render_admin_dashboard():
                 c1, c2, c3 = st.columns(3)
                 n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
                 n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
-                n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
+                n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
                 if st.button("💾 Guardar Cambios"):
                     paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
@@ -232,15 +241,12 @@ def render_admin_dashboard():
                     icon_t = "✈️" if r.get('Tipo_Traslado') == "Aéreo" else "🚢"
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon_t} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
-# --- 4. INTERFAZ CLIENTE (RESTAURADA) ---
+# --- 4. INTERFAZ CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
     
-    # Buscador para el cliente
     busq_cli = st.text_input("🔍 Buscar mis paquetes por código de barra:", key="cli_search_input")
-    
-    # Filtrar solo paquetes del correo del usuario logueado
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
     
     if busq_cli:
@@ -257,7 +263,6 @@ def render_client_dashboard():
                 abo = float(p.get('Abonado', 0.0))
                 rest = tot - abo
                 porc = (abo / tot * 100) if tot > 0 else 0
-                
                 badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
                 icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
                 
@@ -274,54 +279,4 @@ def render_client_dashboard():
                         <div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px;">
                             <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
                                 <span>Progreso de Pago</span>
-                                <b>{porc:.1f}%</b>
-                            </div>
-                """, unsafe_allow_html=True)
-                
-                # Renderizar la barra de progreso nativa de Streamlit
-                st.progress(abo/tot if tot > 0 else 0)
-                
-                st.markdown(f"""
-                            <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95em;">
-                                <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
-                                <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
-                            </div>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-# --- 5. LÓGICA DE LOGIN ---
-with st.sidebar:
-    if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
-    else: st.markdown('<h1 class="logo-animado" style="font-size: 30px;">IACargo.io</h1>', unsafe_allow_html=True)
-    st.write("---")
-    if st.session_state.usuario_identificado:
-        st.success(f"Socio: {st.session_state.usuario_identificado['nombre']}")
-        if st.button("Cerrar Sesión"): st.session_state.usuario_identificado = None; st.rerun()
-    st.write("---")
-    st.caption("“La existencia es un milagro”")
-    st.caption("“No eres herramienta, eres evolución”")
-
-if st.session_state.usuario_identificado is None:
-    c1, c2, c3 = st.columns([1, 1.5, 1])
-    with c2:
-        st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
-        t1, t2 = st.tabs(["Ingresar", "Registrarse"])
-        with t1:
-            with st.form("login_form"):
-                le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-                if st.form_submit_button("Entrar", use_container_width=True):
-                    if le == "admin" and lp == "admin123":
-                        st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                    u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                    if u: st.session_state.usuario_identificado = u; st.rerun()
-                    else: st.error("Credenciales incorrectas")
-        with t2:
-            with st.form("signup_form"):
-                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                if st.form_submit_button("Crear Cuenta"):
-                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
-else:
-    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
-    else: render_client_dashboard()
+                                <b>{porc:.1f
