@@ -90,6 +90,8 @@ st.markdown("""
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
+    .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+    .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -174,7 +176,8 @@ def render_admin_dashboard():
         st.subheader("✈️ Estatus de Logística")
         if st.session_state.inventario:
             sel_e = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="status_sel")
-            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"])
+            # --- SE AÑADIÓ 'RECIBIDO EN DESTINO' AQUÍ ---
+            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN DESTINO", "ENTREGADO"])
             if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
@@ -314,14 +317,12 @@ if st.session_state.usuario_identificado is None:
 
 # CASO 2: LOGUEADO (SIN SIDEBAR)
 else:
-    # Renderizamos el nombre del socio en la burbuja flotante
     st.markdown(f"""
         <div class="logout-container">
             <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    # El botón real de Streamlit con la nueva etiqueta profesional
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
