@@ -17,9 +17,12 @@ st.markdown("""
         color: #ffffff;
     }
     
-    [data-testid="stSidebar"] { display: none; }
+    /* Ocultar la barra lateral por completo */
+    [data-testid="stSidebar"] {
+        display: none;
+    }
     
-    /* Contenedor Unificado Superior */
+    /* Botón de Cerrar Sesión en la esquina superior derecha */
     .logout-container {
         position: fixed;
         top: 20px;
@@ -27,7 +30,7 @@ st.markdown("""
         z-index: 1000;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
         background: rgba(255, 255, 255, 0.1);
         padding: 8px 15px;
         border-radius: 30px;
@@ -35,27 +38,40 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Logo Animado */
     .logo-animado {
-        font-style: italic !important; font-family: 'Georgia', serif;
+        font-style: italic !important;
+        font-family: 'Georgia', serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        display: inline-block; animation: pulse 2.5s infinite; font-weight: 800;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        animation: pulse 2.5s infinite;
+        font-weight: 800;
+        margin-bottom: 5px;
     }
-    @keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.03); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.9; }
+    }
 
-    /* Cards y Tabs */
+    /* Contenedores y Formularios */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px !important; padding: 20px; margin-bottom: 15px; color: white !important;
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px !important;
+        padding: 20px;
+        margin-bottom: 15px;
+        color: white !important;
     }
 
-    /* --- BLINDAJE DE COLOR AZUL PARA TODOS LOS BOTONES --- */
-    /* Aplica a: Botones normales, Botones de Formulario y Popover de Notificaciones */
-    .stButton button, 
-    div[data-testid="stForm"] button, 
-    div[data-testid="stPopover"] > button {
+    /* Limpieza de inputs y botones */
+    div[data-testid="stInputAdornment"] { display: none !important; }
+    div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
+    div[data-baseweb="input"] input { color: #1e293b !important; }
+
+    .stButton button, div[data-testid="stForm"] button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important;
@@ -63,33 +79,16 @@ st.markdown("""
         text-transform: uppercase !important;
         border: none !important;
         transition: all 0.3s ease !important;
-        width: 100%;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        width: 100% !important;
     }
     
-    /* Hover global para todos los botones */
-    .stButton button:hover, 
-    div[data-testid="stForm"] button:hover, 
-    div[data-testid="stPopover"] > button:hover { 
-        transform: translateY(-2px) !important; 
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
-        color: white !important;
-    }
+    .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
 
-    /* Botones específicos de la barra superior (tamaño ajustado) */
-    .logout-container .stButton button, 
-    .logout-container div[data-testid="stPopover"] > button {
-        height: 35px !important;
-        padding: 5px 15px !important;
-        width: auto !important;
-    }
-
-    /* Estética de Inputs */
-    div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
-    div[data-baseweb="input"] input { color: #1e293b !important; }
+    /* Estilos de tablas y métricas */
     .metric-container { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
     .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
+    
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
     .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
     .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
@@ -100,7 +99,6 @@ st.markdown("""
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
-ARCHIVO_NOTIF = "notificaciones_iacargo.csv"
 PRECIO_POR_UNIDAD = 5.0
 
 def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
@@ -118,17 +116,11 @@ def guardar_datos(datos, archivo): pd.DataFrame(datos).to_csv(archivo, index=Fal
 if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
 if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
-if 'notificaciones' not in st.session_state: st.session_state.notificaciones = cargar_datos(ARCHIVO_NOTIF)
 if 'usuario_identificado' not in st.session_state: st.session_state.usuario_identificado = None
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-def registrar_notificacion(correo, id_barra, nuevo_estado):
-    notif = {"Correo": correo.lower().strip(), "ID": id_barra, "Estado": nuevo_estado, "Fecha": datetime.now().strftime("%d/%m/%Y %H:%M")}
-    st.session_state.notificaciones.append(notif)
-    guardar_datos(st.session_state.notificaciones, ARCHIVO_NOTIF)
-
-# --- 3. DASHBOARDS (Lógica intacta) ---
+# --- 3. FUNCIONES DE DASHBOARD ---
 def render_admin_dashboard():
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -184,13 +176,11 @@ def render_admin_dashboard():
         st.subheader("✈️ Estatus de Logística")
         if st.session_state.inventario:
             sel_e = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="status_sel")
+            # --- ESTADO ACTUALIZADO SEGÚN TU SOLICITUD ---
             n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"])
             if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
-                    if p["ID_Barra"] == sel_e: 
-                        if p["Estado"] != n_st:
-                            p["Estado"] = n_st
-                            registrar_notificacion(p["Correo"], p["ID_Barra"], n_st)
+                    if p["ID_Barra"] == sel_e: p["Estado"] = n_st
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
     with t_aud:
@@ -249,25 +239,56 @@ def render_client_dashboard():
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
     if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
     if not mis_p:
-        st.info("Actualmente no tienes envíos registrados.")
+        st.info("Actualmente no tienes envíos registrados en el sistema.")
     else:
+        st.write(f"Has registrado **{len(mis_p)}** paquete(s):")
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
                 tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = tot - abo
                 porc = (abo / tot * 100) if tot > 0 else 0
-                st.markdown(f'<div class="p-card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><span style="color:#60a5fa; font-weight:800; font-size:1.3em;"># {p["ID_Barra"]}</span><span class="badge-paid" style="background:{"#10b981" if p["Pago"]=="PAGADO" else "#f87171"}">{p["Pago"]}</span></div>📍 <b>Estado:</b> {p["Estado"]}<br>💳 <b>Modalidad:</b> {p.get("Modalidad", "N/A")}<div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px; margin-top:10px;"><div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;"><span>Progreso de Pago</span><b>{porc:.1f}%</b></div>', unsafe_allow_html=True)
+                badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                st.markdown(f"""
+                    <div class="p-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <span style="color:#60a5fa; font-weight:800; font-size:1.3em;">{icon} #{p['ID_Barra']}</span>
+                            <span class="{badge_class}">{p.get('Pago')}</span>
+                        </div>
+                        <div style="font-size:1em; margin-bottom:15px;">
+                            📍 <b>Estado actual:</b> {p['Estado']}<br>
+                            💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
+                        </div>
+                        <div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
+                                <span>Progreso de Pago</span><b>{porc:.1f}%</b>
+                            </div>
+                """, unsafe_allow_html=True)
                 st.progress(abo/tot if tot > 0 else 0)
-                st.markdown(f'<div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95em;"><div style="color:#10b981;">Pagado: ${abo:.2f}</div><div style="color:#f87171;">Pendiente: ${rest:.2f}</div></div></div></div>', unsafe_allow_html=True)
+                st.markdown(f"""
+                            <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95em;">
+                                <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
+                                <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
+                            </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
 
-# --- 4. ACCESO Y NAVEGACIÓN ---
+# --- 4. LÓGICA DE NAVEGACIÓN Y ACCESO ---
 
+# CASO 1: NO ESTÁ LOGUEADO
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         st.markdown("<br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown('<div style="text-align:center;"><h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1><p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p><div style="height:40px;"></div></div>', unsafe_allow_html=True)
+            st.markdown("""
+                <div style="text-align:center;">
+                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
+                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
+                    <div style="height:40px;"></div>
+                </div>
+            """, unsafe_allow_html=True)
             if st.button("🚀 INGRESAR AL SISTEMA", use_container_width=True):
                 st.session_state.landing_vista = False; st.rerun()
             st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
@@ -281,7 +302,7 @@ if st.session_state.usuario_identificado is None:
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
                     if st.form_submit_button("Entrar"):
                         if le == "admin" and lp == "admin123":
-                            st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin", "correo": "admin@iacargo.io"}; st.rerun()
+                            st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
                         u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
                         if u: st.session_state.usuario_identificado = u; st.rerun()
                         else: st.error("Credenciales incorrectas")
@@ -294,24 +315,21 @@ if st.session_state.usuario_identificado is None:
             if st.button("⬅️ Volver"):
                 st.session_state.landing_vista = True; st.rerun()
 
+# CASO 2: LOGUEADO (SIN SIDEBAR)
 else:
-    u = st.session_state.usuario_identificado
-    st.markdown('<div class="logout-container">', unsafe_allow_html=True)
-    st.markdown(f'<span style="color:#60a5fa; font-weight:bold; font-size:0.9em; margin-right:10px;">Socio: {u["nombre"]}</span>', unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="logout-container">
+            <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
+        </div>
+    """, unsafe_allow_html=True)
     
-    mis_notif = [n for n in st.session_state.notificaciones if n["Correo"] == u["correo"].lower().strip()]
-    with st.popover(f"🔔 ({len(mis_notif)})"):
-        st.markdown("<h4 style='color:black;'>Historial</h4>", unsafe_allow_html=True)
-        if not mis_notif: st.write("Sin novedades.")
-        else:
-            for n in reversed(mis_notif):
-                st.markdown(f"<div style='color:black; font-size:0.8em; border-bottom:1px solid #eee; padding:5px;'><b>{n['ID']}</b>: {n['Estado']}</div>", unsafe_allow_html=True)
-    
-    if st.button("SALIR 🔒"):
-        st.session_state.usuario_identificado = None
-        st.session_state.landing_vista = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container():
+        cols = st.columns([7, 2])
+        with cols[1]:
+            if st.button("CERRAR SESIÓN 🔒"):
+                st.session_state.usuario_identificado = None
+                st.session_state.landing_vista = True
+                st.rerun()
 
     if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
     else: render_client_dashboard()
