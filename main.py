@@ -93,7 +93,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. GESTIÓN DE DATOS (Mantenida intacta) ---
+# --- 2. GESTIÓN DE DATOS ---
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
@@ -118,7 +118,7 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. FUNCIONES DE DASHBOARD (Administrador y Cliente intactas) ---
+# --- 3. FUNCIONES DE DASHBOARD ---
 def render_admin_dashboard():
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -314,19 +314,18 @@ if st.session_state.usuario_identificado is None:
 
 # CASO 2: LOGUEADO (SIN SIDEBAR)
 else:
-    # Renderizamos el botón de cerrar sesión en la parte superior derecha usando HTML/CSS
-    # Y lo vinculamos a un botón de Streamlit para que funcione la lógica
+    # Renderizamos el nombre del socio en la burbuja flotante
     st.markdown(f"""
         <div class="logout-container">
             <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    # El botón real de Streamlit debe estar en algún lugar, lo ponemos al final o al inicio pero flotante
+    # El botón real de Streamlit con la nueva etiqueta profesional
     with st.container():
-        cols = st.columns([8, 1])
+        cols = st.columns([7, 2])
         with cols[1]:
-            if st.button("Cerrar Sesión 🔒"):
+            if st.button("CERRAR SESIÓN 🔒"):
                 st.session_state.usuario_identificado = None
                 st.session_state.landing_vista = True
                 st.rerun()
