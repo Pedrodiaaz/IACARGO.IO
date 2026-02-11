@@ -41,28 +41,28 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- CIRUGÍA DE PRECISIÓN: BLOQUE AZUL COMPACTO PARA CONTRASEÑA --- */
-    /* 1. Ajuste del texto para que no se esconda tras el icono */
+    /* --- DISEÑO FIEL A LA IMAGEN: BLOQUE AZUL COMPACTO --- */
+    /* Ajuste del input para evitar solapamiento con el bloque azul */
     div[data-baseweb="input"] input {
-        padding-right: 50px !important; 
+        padding-right: 46px !important; 
     }
     
-    /* 2. El contenedor del ojo: Cuadrado pequeño ajustado a la derecha */
+    /* El contenedor del ojo se convierte en el cuadrado azul exacto de la imagen */
     div[data-testid="stInputAdornment"] {
-        width: 45px !important; /* Ancho quirúrgico y compacto */
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        width: 42px !important; /* Ancho ajustado para ser casi cuadrado */
+        background: #2563eb !important; /* Azul sólido fiel a la imagen */
         height: 100% !important;
         right: 0px !important;
         position: absolute !important;
+        display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        border-radius: 0 12px 12px 0 !important; /* Redondeado solo en el borde exterior */
+        border-radius: 0 10px 10px 0 !important; /* Redondeado ajustado a la curvatura del input */
         margin: 0 !important;
         border: none !important;
-        box-shadow: -2px 0 10px rgba(0,0,0,0.1) !important;
     }
 
-    /* 3. Limpieza del botón interno para que el ojo llene el espacio */
+    /* Ajuste del botón interno para que el ojo quede centrado a la perfección */
     div[data-testid="stInputAdornment"] button {
         width: 100% !important;
         height: 100% !important;
@@ -71,13 +71,15 @@ st.markdown("""
         box-shadow: none !important;
         color: white !important;
         padding: 0 !important;
+        margin: 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
     }
     
+    /* Hover sutil para el bloque azul */
     div[data-testid="stInputAdornment"]:hover {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        background: #1d4ed8 !important;
     }
 
     /* --- ESTILO DE BOTONES GENERALES --- */
