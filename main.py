@@ -41,55 +41,28 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- DISEÑO FINAL: BLOQUE AZUL MINIMALISTA (ESTILO JOYERO) --- */
+    /* --- ELIMINACIÓN TOTAL DEL BOTÓN AZUL (OJO) --- */
     
-    /* Contenedor del input */
+    /* Forzamos la desaparición del contenedor del botón */
+    div[data-testid="stInputAdornment"] {
+        display: none !important;
+    }
+
+    /* Ajustamos el contenedor del input para que sea uniforme */
     div[data-baseweb="input"] {
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         overflow: hidden !important; 
         border: none !important;
-        background-color: #f0f2f6 !important; 
-        height: 48px !important;
+        background-color: #f8fafc !important; 
+        height: 45px !important;
     }
 
-    /* Área de texto: Recuperamos el 85-90% del espacio */
+    /* Eliminamos el espacio extra a la derecha que dejaba el botón */
     div[data-baseweb="input"] input {
-        padding-right: 45px !important; /* Espacio justo para no chocar con el mini-bloque */
+        padding-right: 15px !important; 
         color: #1e293b !important;
     }
-    
-    /* El bloque azul: Reducido a un cuadrado perfecto de 40px */
-    div[data-testid="stInputAdornment"] {
-        width: 40px !important;  /* Ancho ajustado según la imagen */
-        background: #2563eb !important; 
-        height: 100% !important;
-        position: absolute !important;
-        right: 0px !important;
-        top: 0px !important;
-        bottom: 0px !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        margin: 0 !important;
-        border: none !important;
-        z-index: 1;
-    }
 
-    /* El icono del ojo: Blanco, nítido y centrado */
-    div[data-testid="stInputAdornment"] button {
-        width: 100% !important;
-        height: 100% !important;
-        background: transparent !important;
-        border: none !important;
-        color: white !important;
-        padding: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        transform: scale(0.9); /* Un toque más pequeño para elegancia */
-    }
-
-    /* --- ESTILO DE BOTONES GENERALES --- */
     .stButton button, div[data-testid="stForm"] button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
@@ -98,17 +71,9 @@ st.markdown("""
         text-transform: uppercase !important;
         border: none !important;
         padding: 10px 24px !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3) !important;
         width: 100% !important;
     }
     
-    .stButton button:hover, div[data-testid="stForm"] button:hover {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
-    }
-
     .metric-container {
         background: rgba(255, 255, 255, 0.1);
         padding: 15px;
@@ -173,7 +138,7 @@ if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(
 if 'usuario_identificado' not in st.session_state: st.session_state.usuario_identificado = None
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 
-# --- 3. INTERFAZ ADMINISTRADOR (Resumida para brevedad, mantiene tu lógica) ---
+# --- 3. INTERFAZ ADMINISTRADOR ---
 def render_admin_dashboard():
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -184,7 +149,6 @@ def render_admin_dashboard():
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], key="admin_reg_tra")
         label_din = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso (Kg / Lbs)"
         with st.form("reg_form", clear_on_submit=True):
-            st.info(f"ID sugerido: **{st.session_state.id_actual}**")
             f_id = st.text_input("ID Tracking / Guía", value=st.session_state.id_actual)
             f_cli = st.text_input("Nombre del Cliente")
             f_cor = st.text_input("Correo del Cliente")
@@ -196,17 +160,16 @@ def render_admin_dashboard():
                     st.session_state.inventario.append(nuevo)
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     st.session_state.id_actual = generar_id_unico()
-                    st.success(f"Guía {f_id} registrada."); st.rerun()
+                    st.rerun()
 
-    # (El resto de las pestañas mantienen tu lógica original de validación, cobros, estatus, auditoría y resumen)
     with t_res:
         st.subheader("📊 Resumen General de Carga")
-        busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search_admin")
         df_res = pd.DataFrame(st.session_state.inventario)
+        busq_res = st.text_input("🔍 Buscar caja por código:", key="res_search_admin")
         if busq_res and not df_res.empty: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
         for est_k, est_l, _ in [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN", "Almacén"), ("EN TRANSITO", "✈️ EN TRÁNSITO", "Tránsito"), ("ENTREGADO", "✅ ENTREGADO", "Entregado")]:
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
-            with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
+            with st.expander(f"{est_l} ({len(df_f)})"):
                 for _, r in df_f.iterrows():
                     icon_t = "✈️" if r.get('Tipo_Traslado') == "Aéreo" else "🚢"
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon_t} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
@@ -215,29 +178,23 @@ def render_admin_dashboard():
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
-    busq_cli = st.text_input("🔍 Buscar mis paquetes por código de barra:", key="cli_search_input")
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
-    if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
-
-    if not mis_p: st.info("No tienes envíos registrados.")
+    
+    if not mis_p:
+        st.info("No tienes paquetes registrados.")
     else:
-        c1, c2 = st.columns(2)
-        for i, p in enumerate(mis_p):
-            with (c1 if i % 2 == 0 else c2):
-                tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0))
-                porc = (abo / tot * 100) if tot > 0 else 0
-                st.markdown(f'<div class="p-card"><span style="color:#60a5fa; font-weight:800;">#{p["ID_Barra"]}</span><br>Estado: {p["Estado"]}</div>', unsafe_allow_html=True)
+        for p in mis_p:
+            tot = float(p.get('Monto_USD', 1.0)); abo = float(p.get('Abonado', 0.0))
+            with st.container():
+                st.markdown(f'<div class="p-card">📦 Guía: {p["ID_Barra"]} - Estado: {p["Estado"]}</div>', unsafe_allow_html=True)
                 st.progress(abo/tot if tot > 0 else 0)
 
 # --- 5. LÓGICA DE LOGIN ---
 with st.sidebar:
     if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
     else: st.markdown('<h1 class="logo-animado" style="font-size: 30px;">IACargo.io</h1>', unsafe_allow_html=True)
-    st.write("---")
     if st.session_state.usuario_identificado:
         if st.button("Cerrar Sesión"): st.session_state.usuario_identificado = None; st.rerun()
-    st.caption("“La existencia es un milagro”")
-    st.caption("“No eres herramienta, eres evolución”")
 
 if st.session_state.usuario_identificado is None:
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -247,7 +204,7 @@ if st.session_state.usuario_identificado is None:
         with t1:
             with st.form("login_form"):
                 le = st.text_input("Correo")
-                lp = st.text_input("Clave", type="password") # AQUÍ SE APLICA EL DISEÑO MINIMALISTA
+                lp = st.text_input("Clave", type="password") # El botón se oculta por CSS arriba
                 if st.form_submit_button("Entrar", use_container_width=True):
                     if le == "admin" and lp == "admin123":
                         st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
