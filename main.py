@@ -1,5 +1,5 @@
 import streamlit as st
-import pd as pd
+import pandas as pd
 import os
 import hashlib
 import random
@@ -17,22 +17,37 @@ st.markdown("""
         color: #ffffff;
     }
     
-    [data-testid="stSidebar"] { display: none; }
+    /* Ocultar la barra lateral por completo */
+    [data-testid="stSidebar"] {
+        display: none;
+    }
     
+    /* Botón de Cerrar Sesión en la esquina superior derecha */
     .logout-container {
-        position: fixed; top: 20px; right: 20px; z-index: 1000;
-        display: flex; align-items: center; gap: 15px;
-        background: rgba(255, 255, 255, 0.1); padding: 8px 15px;
-        border-radius: 30px; backdrop-filter: blur(10px);
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 15px;
+        border-radius: 30px;
+        backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .logo-animado {
-        font-style: italic !important; font-family: 'Georgia', serif;
+        font-style: italic !important;
+        font-family: 'Georgia', serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        display: inline-block; animation: pulse 2.5s infinite;
-        font-weight: 800; margin-bottom: 5px;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        animation: pulse 2.5s infinite;
+        font-weight: 800;
+        margin-bottom: 5px;
     }
     @keyframes pulse {
         0% { transform: scale(1); opacity: 0.9; }
@@ -40,27 +55,41 @@ st.markdown("""
         100% { transform: scale(1); opacity: 0.9; }
     }
 
+    /* Contenedores y Formularios */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px !important; padding: 20px; margin-bottom: 15px;
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px !important;
+        padding: 20px;
+        margin-bottom: 15px;
+        color: white !important;
     }
 
-    div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
+    /* Limpieza de inputs y botones */
+    div[data-testid="stInputAdornment"] { display: none !important; }
+    div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #1e293b !important; }
 
-    .stButton button {
+    .stButton button, div[data-testid="stForm"] button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-        color: white !important; border-radius: 12px !important; font-weight: 700 !important;
-        text-transform: uppercase !important; width: 100% !important;
+        color: white !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
     }
     
+    .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
+
+    /* Estilos de tablas y métricas */
     .metric-container { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
-    .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
-    .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; }
+    .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
+    .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
     
-    .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-    .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+    h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -89,7 +118,7 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. FUNCIONES DE DASHBOARD (ADMIN Y CLIENTE) ---
+# --- 3. FUNCIONES DE DASHBOARD ---
 def render_admin_dashboard():
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -207,7 +236,7 @@ def render_client_dashboard():
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
     if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
     if not mis_p:
-        st.info("Actualmente no tienes envíos registrados.")
+        st.info("Actualmente no tienes envíos registrados en el sistema.")
     else:
         st.write(f"Has registrado **{len(mis_p)}** paquete(s):")
         c1, c2 = st.columns(2)
@@ -242,13 +271,21 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
-# --- 4. ACCESO ---
+# --- 4. LÓGICA DE NAVEGACIÓN Y ACCESO ---
+
+# CASO 1: NO ESTÁ LOGUEADO
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         st.markdown("<br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown("""<div style="text-align:center;"><h1 class="logo-animado" style="font-size:80px;">IACargo.io</h1><p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p></div>""", unsafe_allow_html=True)
+            st.markdown("""
+                <div style="text-align:center;">
+                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
+                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
+                    <div style="height:40px;"></div>
+                </div>
+            """, unsafe_allow_html=True)
             if st.button("🚀 INGRESAR AL SISTEMA", use_container_width=True):
                 st.session_state.landing_vista = False; st.rerun()
             st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
@@ -258,7 +295,7 @@ if st.session_state.usuario_identificado is None:
             st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
             t1, t2 = st.tabs(["Ingresar", "Registrarse"])
             with t1:
-                with st.form("login"):
+                with st.form("login_form"):
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
                     if st.form_submit_button("Entrar"):
                         if le == "admin" and lp == "admin123":
@@ -267,18 +304,31 @@ if st.session_state.usuario_identificado is None:
                         if u: st.session_state.usuario_identificado = u; st.rerun()
                         else: st.error("Credenciales incorrectas")
             with t2:
-                with st.form("signup"):
+                with st.form("signup_form"):
                     n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                     if st.form_submit_button("Crear Cuenta"):
                         st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
                         guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
-            if st.button("⬅️ Volver"): st.session_state.landing_vista = True; st.rerun()
+            if st.button("⬅️ Volver"):
+                st.session_state.landing_vista = True; st.rerun()
+
+# CASO 2: LOGUEADO (SIN SIDEBAR)
 else:
-    st.markdown(f'<div class="logout-container"><span style="color:#60a5fa; font-weight:bold;">Socio: {st.session_state.usuario_identificado["nombre"]}</span></div>', unsafe_allow_html=True)
+    # Renderizamos el nombre del socio en la burbuja flotante
+    st.markdown(f"""
+        <div class="logout-container">
+            <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # El botón real de Streamlit con la nueva etiqueta profesional
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
             if st.button("CERRAR SESIÓN 🔒"):
-                st.session_state.usuario_identificado = None; st.session_state.landing_vista = True; st.rerun()
+                st.session_state.usuario_identificado = None
+                st.session_state.landing_vista = True
+                st.rerun()
+
     if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
     else: render_client_dashboard()
