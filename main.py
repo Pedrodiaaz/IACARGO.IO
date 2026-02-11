@@ -1,5 +1,4 @@
 import streamlit as st
-import pd
 import pandas as pd
 import os
 import hashlib
@@ -67,6 +66,10 @@ st.markdown("""
         color: white !important;
     }
 
+    /* Estilos de Insignias (Badges) */
+    .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+    .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+
     /* Limpieza de inputs y botones */
     div[data-testid="stInputAdornment"] { display: none !important; }
     div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
@@ -91,10 +94,6 @@ st.markdown("""
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
-
-    /* Badge para estados de pago */
-    .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-    .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -261,62 +260,61 @@ def render_client_dashboard():
         st.write(f"Has registrado **{len(mis_p)}** paquete(s):")
         
         for p in mis_p:
-            with st.container():
-                tot = float(p.get('Monto_USD', 0.0))
-                abo = float(p.get('Abonado', 0.0))
-                rest = tot - abo
-                porc = (abo / tot * 100) if tot > 0 else 0
-                badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
-                icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
-                
-                # --- INICIO TARJETA P-CARD ---
-                st.markdown(f"""
-                    <div class="p-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                            <span style="color:#60a5fa; font-weight:800; font-size:1.4em;">{icon} #{p['ID_Barra']}</span>
-                            <span class="{badge_class}">{p.get('Pago')}</span>
+            tot = float(p.get('Monto_USD', 0.0))
+            abo = float(p.get('Abonado', 0.0))
+            rest = tot - abo
+            porc = (abo / tot * 100) if tot > 0 else 0
+            badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+            icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+            
+            # --- INICIO TARJETA P-CARD ---
+            st.markdown(f"""
+                <div class="p-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <span style="color:#60a5fa; font-weight:800; font-size:1.4em;">{icon} #{p['ID_Barra']}</span>
+                        <span class="{badge_class}">{p.get('Pago')}</span>
+                    </div>
+            """, unsafe_allow_html=True)
+
+            # --- LÍNEA DE TIEMPO VISUAL (STEPPER) ---
+            hitos = ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN DESTINO", "ENTREGADO"]
+            nombres_hitos = ["Almacén", "Tránsito", "Destino", "Entregado"]
+            est_act = p.get('Estado', "RECIBIDO ALMACEN PRINCIPAL")
+            
+            try: idx_act = hitos.index(est_act)
+            except: idx_act = 0
+
+            cols_s = st.columns(4)
+            for i, nombre in enumerate(nombres_hitos):
+                with cols_s[i]:
+                    color = "#60a5fa" if i <= idx_act else "#475569"
+                    opac = "1" if i <= idx_act else "0.5"
+                    bullet = "●" if i < idx_act else ("◎" if i == idx_act else "○")
+                    st.markdown(f"""
+                        <div style="text-align:center; color:{color}; opacity:{opac};">
+                            <div style="font-size:1.1em; font-weight:bold;">{bullet}</div>
+                            <div style="font-size:0.65em; font-weight:700; text-transform:uppercase;">{nombre}</div>
                         </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+            
+            st.progress(idx_act / 3 if idx_act < 4 else 1.0)
 
-                # --- LÍNEA DE TIEMPO VISUAL (STEPPER) ---
-                hitos = ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN DESTINO", "ENTREGADO"]
-                nombres_hitos = ["Almacén", "Tránsito", "Destino", "Entregado"]
-                est_act = p.get('Estado', "RECIBIDO ALMACEN PRINCIPAL")
-                try: idx_act = hitos.index(est_act)
-                except: idx_act = 0
-
-                cols_s = st.columns(4)
-                for i, nombre in enumerate(nombres_hitos):
-                    with cols_s[i]:
-                        color = "#60a5fa" if i <= idx_act else "#475569"
-                        opac = "1" if i <= idx_act else "0.5"
-                        bullet = "●" if i < idx_act else ("◎" if i == idx_act else "○")
-                        st.markdown(f"""
-                            <div style="text-align:center; color:{color}; opacity:{opac};">
-                                <div style="font-size:1.1em; font-weight:bold;">{bullet}</div>
-                                <div style="font-size:0.65em; font-weight:700; text-transform:uppercase;">{nombre}</div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                
-                st.progress(idx_act / 3)
-
-                # --- INFORMACIÓN DE PAGO ---
-                st.markdown(f"""
-                        <div style="background: rgba(255,255,255,0.06); border-radius:12px; padding:15px; margin-top:15px;">
-                            <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
-                                <span style="opacity:0.8;">Progreso de Pago</span><b>{porc:.1f}%</b>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95em;">
-                                <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
-                                <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
-                            </div>
+            st.markdown(f"""
+                    <div style="background: rgba(255,255,255,0.06); border-radius:12px; padding:15px; margin-top:15px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
+                            <span style="opacity:0.8;">Progreso de Pago</span><b>{porc:.1f}%</b>
                         </div>
-                        <div style="font-size:0.85em; margin-top:10px; opacity:0.7;">
-                            📍 <b>Estatus:</b> {est_act} | 💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95em;">
+                            <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
+                            <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
-                st.write("") 
+                    <div style="font-size:0.85em; margin-top:10px; opacity:0.7;">
+                        📍 <b>Estatus:</b> {est_act} | 💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.write("")
 
 # --- 4. LÓGICA DE NAVEGACIÓN Y ACCESO ---
 
