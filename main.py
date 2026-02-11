@@ -41,45 +41,50 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- DISEÑO FIEL A LA IMAGEN: BLOQUE AZUL COMPACTO --- */
-    /* Ajuste del input para evitar solapamiento con el bloque azul */
+    /* --- DISEÑO FINAL: BLOQUE AZUL INTEGRADO (EFECTO REFERENCIA) --- */
+    
+    /* Contenedor del input para que no tenga bordes internos raros */
+    div[data-baseweb="input"] {
+        border-radius: 12px !important;
+        overflow: hidden !important; /* Para que el bloque azul respete la redondez del input */
+        border: none !important;
+        background-color: #f0f2f6 !important; /* Color claro del input */
+    }
+
+    /* Ajuste del área de texto para que no choque con el botón */
     div[data-baseweb="input"] input {
-        padding-right: 46px !important; 
+        padding-right: 55px !important;
+        color: #1e293b !important; /* Texto oscuro para legibilidad en el fondo claro */
     }
     
-    /* El contenedor del ojo se convierte en el cuadrado azul exacto de la imagen */
+    /* El bloque azul: Ajustado a la perfección al borde derecho */
     div[data-testid="stInputAdornment"] {
-        width: 42px !important; /* Ancho ajustado para ser casi cuadrado */
-        background: #2563eb !important; /* Azul sólido fiel a la imagen */
+        width: 50px !important; 
+        background: #2563eb !important; /* Azul sólido de la referencia */
         height: 100% !important;
-        right: 0px !important;
         position: absolute !important;
+        right: 0px !important;
+        top: 0px !important;
+        bottom: 0px !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        border-radius: 0 10px 10px 0 !important; /* Redondeado ajustado a la curvatura del input */
         margin: 0 !important;
         border: none !important;
+        z-index: 1;
     }
 
-    /* Ajuste del botón interno para que el ojo quede centrado a la perfección */
+    /* El icono del ojo blanco y centrado */
     div[data-testid="stInputAdornment"] button {
         width: 100% !important;
         height: 100% !important;
         background: transparent !important;
         border: none !important;
-        box-shadow: none !important;
         color: white !important;
         padding: 0 !important;
-        margin: 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-    }
-    
-    /* Hover sutil para el bloque azul */
-    div[data-testid="stInputAdornment"]:hover {
-        background: #1d4ed8 !important;
     }
 
     /* --- ESTILO DE BOTONES GENERALES --- */
