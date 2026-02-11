@@ -41,6 +41,18 @@ st.markdown("""
         color: white !important;
     }
 
+    /* --- CIRUGÍA AL CAMPO DE CONTRASEÑA --- */
+    /* Reducimos el padding derecho para que el texto no se corte antes de tiempo */
+    div[data-baseweb="input"] input {
+        padding-right: 45px !important;
+    }
+    
+    /* Compactamos el contenedor del botón del ojo */
+    div[data-testid="stInputAdornment"] {
+        width: 40px !important;
+        right: 0px !important;
+    }
+
     /* --- ESTILO DE BOTONES --- */
     .stButton button, div[data-testid="stForm"] button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
@@ -150,7 +162,6 @@ def render_admin_dashboard():
                     st.session_state.id_actual = generar_id_unico()
                     st.success(f"Guía {f_id} registrada."); st.rerun()
 
-    # (Las demás pestañas de administración se mantienen igual para no perder funcionalidad)
     with t_val:
         st.subheader("⚖️ Validación en Almacén")
         pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
@@ -308,7 +319,7 @@ if st.session_state.usuario_identificado is None:
         with t1:
             with st.form("login_form"):
                 le = st.text_input("Correo")
-                lp = st.text_input("Clave", type="password") # Streamlit pone el ojo por defecto aquí
+                lp = st.text_input("Clave", type="password")
                 if st.form_submit_button("Entrar", use_container_width=True):
                     if le == "admin" and lp == "admin123":
                         st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
