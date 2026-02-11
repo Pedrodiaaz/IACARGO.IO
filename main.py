@@ -1,4 +1,5 @@
 import streamlit as st
+import pd
 import pandas as pd
 import os
 import hashlib
@@ -90,6 +91,10 @@ st.markdown("""
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
     
     h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
+
+    /* Badge para estados de pago */
+    .badge-paid { background: #10b981; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+    .badge-debt { background: #f87171; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -174,7 +179,7 @@ def render_admin_dashboard():
         st.subheader("✈️ Estatus de Logística")
         if st.session_state.inventario:
             sel_e = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="status_sel")
-            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "ENTREGADO"])
+            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN DESTINO", "ENTREGADO"])
             if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
@@ -231,45 +236,87 @@ def render_admin_dashboard():
 
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
-    st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
+    
+    # Encabezado con Icono de Notificaciones
+    c_w1, c_n1 = st.columns([0.85, 0.15])
+    with c_w1:
+        st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
+    with c_n1:
+        st.markdown("""
+            <div style="text-align:right; padding-top:10px;">
+                <span style="font-size:28px; position:relative; cursor:pointer;">
+                    🔔<span style="position:absolute; top:0; right:0; background:red; border-radius:50%; width:10px; height:10px; border:2px solid #1e3a8a;"></span>
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+
     busq_cli = st.text_input("🔍 Buscar mis paquetes por código de barra:", key="cli_search_input")
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
+    
     if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
+    
     if not mis_p:
         st.info("Actualmente no tienes envíos registrados en el sistema.")
     else:
         st.write(f"Has registrado **{len(mis_p)}** paquete(s):")
-        c1, c2 = st.columns(2)
-        for i, p in enumerate(mis_p):
-            with (c1 if i % 2 == 0 else c2):
-                tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = tot - abo
+        
+        for p in mis_p:
+            with st.container():
+                tot = float(p.get('Monto_USD', 0.0))
+                abo = float(p.get('Abonado', 0.0))
+                rest = tot - abo
                 porc = (abo / tot * 100) if tot > 0 else 0
                 badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
                 icon = "✈️" if p.get('Tipo_Traslado') == "Aéreo" else "🚢"
+                
+                # --- INICIO TARJETA P-CARD ---
                 st.markdown(f"""
                     <div class="p-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                            <span style="color:#60a5fa; font-weight:800; font-size:1.3em;">{icon} #{p['ID_Barra']}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <span style="color:#60a5fa; font-weight:800; font-size:1.4em;">{icon} #{p['ID_Barra']}</span>
                             <span class="{badge_class}">{p.get('Pago')}</span>
                         </div>
-                        <div style="font-size:1em; margin-bottom:15px;">
-                            📍 <b>Estado actual:</b> {p['Estado']}<br>
-                            💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
-                        </div>
-                        <div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px;">
-                            <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
-                                <span>Progreso de Pago</span><b>{porc:.1f}%</b>
-                            </div>
                 """, unsafe_allow_html=True)
-                st.progress(abo/tot if tot > 0 else 0)
+
+                # --- LÍNEA DE TIEMPO VISUAL (STEPPER) ---
+                hitos = ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN DESTINO", "ENTREGADO"]
+                nombres_hitos = ["Almacén", "Tránsito", "Destino", "Entregado"]
+                est_act = p.get('Estado', "RECIBIDO ALMACEN PRINCIPAL")
+                try: idx_act = hitos.index(est_act)
+                except: idx_act = 0
+
+                cols_s = st.columns(4)
+                for i, nombre in enumerate(nombres_hitos):
+                    with cols_s[i]:
+                        color = "#60a5fa" if i <= idx_act else "#475569"
+                        opac = "1" if i <= idx_act else "0.5"
+                        bullet = "●" if i < idx_act else ("◎" if i == idx_act else "○")
+                        st.markdown(f"""
+                            <div style="text-align:center; color:{color}; opacity:{opac};">
+                                <div style="font-size:1.1em; font-weight:bold;">{bullet}</div>
+                                <div style="font-size:0.65em; font-weight:700; text-transform:uppercase;">{nombre}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                
+                st.progress(idx_act / 3)
+
+                # --- INFORMACIÓN DE PAGO ---
                 st.markdown(f"""
-                            <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95em;">
+                        <div style="background: rgba(255,255,255,0.06); border-radius:12px; padding:15px; margin-top:15px;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
+                                <span style="opacity:0.8;">Progreso de Pago</span><b>{porc:.1f}%</b>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.95em;">
                                 <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
                                 <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
                             </div>
                         </div>
+                        <div style="font-size:0.85em; margin-top:10px; opacity:0.7;">
+                            📍 <b>Estatus:</b> {est_act} | 💳 <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
+                st.write("") 
 
 # --- 4. LÓGICA DE NAVEGACIÓN Y ACCESO ---
 
@@ -314,14 +361,13 @@ if st.session_state.usuario_identificado is None:
 
 # CASO 2: LOGUEADO (SIN SIDEBAR)
 else:
-    # Renderizamos el nombre del socio en la burbuja flotante
+    # Burbuja flotante para el nombre del socio
     st.markdown(f"""
         <div class="logout-container">
             <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    # El botón real de Streamlit con la nueva etiqueta profesional
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
