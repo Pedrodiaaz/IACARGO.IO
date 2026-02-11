@@ -279,4 +279,51 @@ def render_client_dashboard():
                         <div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px;">
                             <div style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:8px;">
                                 <span>Progreso de Pago</span>
-                                <b>{porc:.1f
+                                <b>{porc:.1f}%</b>
+                            </div>
+                """, unsafe_allow_html=True)
+                st.progress(abo/tot if tot > 0 else 0)
+                st.markdown(f"""
+                            <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95em;">
+                                <div style="color:#10b981;">Pagado: ${abo:.2f}</div>
+                                <div style="color:#f87171;">Pendiente: ${rest:.2f}</div>
+                            </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+# --- 5. LÓGICA DE LOGIN ---
+with st.sidebar:
+    if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
+    else: st.markdown('<h1 class="logo-animado" style="font-size: 30px;">IACargo.io</h1>', unsafe_allow_html=True)
+    st.write("---")
+    if st.session_state.usuario_identificado:
+        st.success(f"Socio: {st.session_state.usuario_identificado['nombre']}")
+        if st.button("Cerrar Sesión"): st.session_state.usuario_identificado = None; st.rerun()
+    st.write("---")
+    st.caption("“La existencia es un milagro”")
+    st.caption("“No eres herramienta, eres evolución”")
+
+if st.session_state.usuario_identificado is None:
+    c1, c2, c3 = st.columns([1, 1.5, 1])
+    with c2:
+        st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
+        t1, t2 = st.tabs(["Ingresar", "Registrarse"])
+        with t1:
+            with st.form("login_form"):
+                le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
+                if st.form_submit_button("Entrar", use_container_width=True):
+                    if le == "admin" and lp == "admin123":
+                        st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
+                    u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
+                    if u: st.session_state.usuario_identificado = u; st.rerun()
+                    else: st.error("Credenciales incorrectas")
+        with t2:
+            with st.form("signup_form"):
+                n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
+                if st.form_submit_button("Crear Cuenta"):
+                    st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                    guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
+else:
+    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
+    else: render_client_dashboard()
