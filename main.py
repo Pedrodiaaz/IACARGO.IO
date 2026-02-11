@@ -40,7 +40,7 @@ st.markdown("""
 
     .logo-animado {
         font-style: italic !important;
-        font-family: 'Georgia', serif;
+        font-family: 'Inter', sans-serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -49,13 +49,70 @@ st.markdown("""
         font-weight: 800;
         margin-bottom: 5px;
     }
+    
     @keyframes pulse {
         0% { transform: scale(1); opacity: 0.9; }
         50% { transform: scale(1.03); opacity: 1; }
         100% { transform: scale(1); opacity: 0.9; }
     }
 
-    /* Contenedores y Formularios */
+    /* --- NUEVA ESTÉTICA EXCLUSIVA PARA LANDING --- */
+    .landing-wrapper {
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 100px !important;
+        font-weight: 900 !important;
+        letter-spacing: -4px !important;
+        line-height: 1;
+        background: linear-gradient(180deg, #ffffff 30%, #60a5fa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0px;
+    }
+    
+    .hero-subtitle {
+        font-size: 24px !important;
+        color: #94a3b8 !important;
+        font-weight: 300;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        margin-bottom: 50px;
+    }
+    
+    .landing-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 30px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Botón Landing Especial */
+    .stButton > button[kind="secondary"] {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border-radius: 50px !important;
+        padding: 20px 40px !important;
+        font-size: 18px !important;
+        border: none !important;
+        transition: 0.4s all ease;
+        font-weight: 800 !important;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(96, 165, 250, 0.8) !important;
+    }
+
+    /* --- COMPONENTES INTERNOS (SE MANTIENEN) --- */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px);
@@ -66,7 +123,6 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Limpieza de inputs y botones */
     div[data-testid="stInputAdornment"] { display: none !important; }
     div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #1e293b !important; }
@@ -84,7 +140,6 @@ st.markdown("""
     
     .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
 
-    /* Estilos de tablas y métricas */
     .metric-container { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
     .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
@@ -118,7 +173,7 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. FUNCIONES DE DASHBOARD ---
+# --- 3. FUNCIONES DE DASHBOARD (MANTENIDAS) ---
 def render_admin_dashboard():
     st.title("⚙️ Consola de Control Logístico")
     tabs = st.tabs(["📝 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "✈️ ESTADOS", "🔍 AUDITORÍA/EDICIÓN", "📊 RESUMEN"])
@@ -276,20 +331,27 @@ def render_client_dashboard():
 # CASO 1: NO ESTÁ LOGUEADO
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown("""
-                <div style="text-align:center;">
-                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
-                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
-                    <div style="height:40px;"></div>
+        # LANDING PAGE RE-DISEÑADA (Evolución Visual)
+        st.markdown("""
+            <div class="landing-wrapper">
+                <h1 class="hero-title">IACARGO</h1>
+                <p class="hero-subtitle">Evolution Logistics System</p>
+                <div class="landing-card">
+                    <p style="font-size:20px; color:#e2e8f0; font-style:italic; margin-bottom:30px;">"La existencia es un milagro"</p>
                 </div>
-            """, unsafe_allow_html=True)
-            if st.button("🚀 INGRESAR AL SISTEMA", use_container_width=True):
+            </div>
+        """, unsafe_allow_html=True)
+        
+        c1, c2, c3 = st.columns([1.5, 1, 1.5])
+        with c2:
+            # Botón con estilo "kind=secondary" para aplicar el CSS especial de landing
+            if st.button("ACCEDER AL PORTAL", use_container_width=True, kind="secondary"):
                 st.session_state.landing_vista = False; st.rerun()
-            st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
+        
+        st.markdown("<br><br><p style='text-align:center; opacity:0.4; letter-spacing:2px;'>NO ERES HERRAMIENTA, ERES EVOLUCIÓN.</p>", unsafe_allow_html=True)
+    
     else:
+        # INTERFAZ DE LOGIN (MANTENIDA)
         c1, c2, c3 = st.columns([1, 1.5, 1])
         with c2:
             st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
@@ -312,16 +374,14 @@ if st.session_state.usuario_identificado is None:
             if st.button("⬅️ Volver"):
                 st.session_state.landing_vista = True; st.rerun()
 
-# CASO 2: LOGUEADO (SIN SIDEBAR)
+# CASO 2: LOGUEADO
 else:
-    # Renderizamos el nombre del socio en la burbuja flotante
     st.markdown(f"""
         <div class="logout-container">
             <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
         </div>
     """, unsafe_allow_html=True)
     
-    # El botón real de Streamlit con la nueva etiqueta profesional
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
