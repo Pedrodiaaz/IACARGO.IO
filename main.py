@@ -83,8 +83,8 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* --- AJUSTE SOLICITADO: BOTONES AZULES CON LETRAS BLANCAS --- */
-    .stButton > button, .stForm submit_button {
+    /* --- BOTONES DE ACCIÓN (Azul con Letras Blancas) --- */
+    .stButton > button {
         background-color: #2563eb !important;
         color: white !important;
         border: none !important;
@@ -94,7 +94,6 @@ st.markdown("""
         width: 100%;
         transition: all 0.3s ease !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2) !important;
-        text-transform: uppercase;
     }
     
     .stButton > button:hover {
@@ -166,8 +165,6 @@ def render_admin_dashboard():
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input(label_din, min_value=0.0, step=0.1)
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            
-            # Botón Registrar en Sistema (Mantendrá el estilo azul/blanco)
             if st.form_submit_button("REGISTRAR EN SISTEMA"):
                 if f_id and f_cli and f_cor:
                     nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
