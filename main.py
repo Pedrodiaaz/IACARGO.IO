@@ -66,33 +66,25 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- MEJORA DE VISIBILIDAD EN INPUTS (Texto Negro) --- */
+    /* MEJORA DE VISIBILIDAD EN INPUTS (Texto Negro) */
     div[data-testid="stInputAdornment"] { display: none !important; }
-    
-    /* Fondo de los campos de entrada */
     div[data-baseweb="input"] { 
         border-radius: 10px !important; 
         border: 1px solid #cbd5e1 !important; 
         background-color: #f8fafc !important; 
     }
-    
-    /* Color del texto al escribir: Negro Puro */
     div[data-baseweb="input"] input { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important;
         font-weight: 500 !important;
     }
-
-    /* Ajuste para selectboxes para mantener consistencia */
     div[data-baseweb="select"] > div {
         background-color: #f8fafc !important;
         color: #000000 !important;
     }
-    /* -------------------------------------------------- */
 
     .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
 
-    /* Estilos de tablas y métricas */
     .metric-container { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
     .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
@@ -200,22 +192,38 @@ def render_admin_dashboard():
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("La papelera está vacía.")
         else:
             busq_aud = st.text_input(" Buscar por Guía en Auditoría:", key="aud_search_input")
             df_aud = pd.DataFrame(st.session_state.inventario)
             if not df_aud.empty and busq_aud: 
                 df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False)]
             st.dataframe(df_aud, use_container_width=True)
+            
             if st.session_state.inventario:
-                guia_ed = st.selectbox("Editar ID:", [p["ID_Barra"] for p in st.session_state.inventario], key="ed_sel")
+                st.write("---")
+                st.markdown("### Modificar o Eliminar Registro")
+                guia_ed = st.selectbox("Seleccione ID para gestionar:", [p["ID_Barra"] for p in st.session_state.inventario], key="ed_sel")
                 paq_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_ed)
+                
                 c1, c2, c3 = st.columns(3)
                 n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
                 n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
                 n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
-                if st.button(" Guardar Cambios"):
-                    paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                
+                btn_col1, btn_col2 = st.columns([1, 1])
+                with btn_col1:
+                    if st.button("💾 Guardar Cambios", use_container_width=True):
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
+                with btn_col2:
+                    # BOTÓN DE ELIMINAR (Hacia Papelera)
+                    if st.button("🗑️ Eliminar Registro", use_container_width=True, type="secondary"):
+                        st.session_state.papelera.append(paq_ed)
+                        st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                        guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA)
+                        st.warning(f"Guía {guia_ed} movida a la papelera."); st.rerun()
 
     with t_res:
         st.subheader(" Resumen General de Carga")
@@ -288,51 +296,3 @@ if st.session_state.usuario_identificado is None:
         with col2:
             st.markdown("""
                 <div style="text-align:center;">
-                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
-                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
-                    <div style="height:40px;"></div>
-                </div>
-            """, unsafe_allow_html=True)
-            if st.button(" INGRESAR AL SISTEMA", use_container_width=True):
-                st.session_state.landing_vista = False; st.rerun()
-            st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
-    else:
-        c1, c2, c3 = st.columns([1, 1.5, 1])
-        with c2:
-            st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
-            t1, t2 = st.tabs(["Ingresar", "Registrarse"])
-            with t1:
-                with st.form("login_form"):
-                    le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-                    if st.form_submit_button("Entrar"):
-                        if le == "admin" and lp == "admin123":
-                            st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
-                        u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
-                        if u: st.session_state.usuario_identificado = u; st.rerun()
-                        else: st.error("Credenciales incorrectas")
-            with t2:
-                with st.form("signup_form"):
-                    n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                    if st.form_submit_button("Crear Cuenta"):
-                        st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                        guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
-            if st.button(" Volver"):
-                st.session_state.landing_vista = True; st.rerun()
-
-else:
-    st.markdown(f"""
-        <div class="logout-container">
-            <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    with st.container():
-        cols = st.columns([7, 2])
-        with cols[1]:
-            if st.button("CERRAR SESIÓN "):
-                st.session_state.usuario_identificado = None
-                st.session_state.landing_vista = True
-                st.rerun()
-
-    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
-    else: render_client_dashboard()
