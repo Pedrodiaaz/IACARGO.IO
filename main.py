@@ -19,33 +19,58 @@ st.markdown("""
     
     [data-testid="stSidebar"] { display: none; }
     
-    /* ESTILO ESPECÍFICO DE LA CAMPANA AMARILLA Y PUNTO ROJO */
+    /* ESTILO ESPECÍFICO DE LA CAMPANA Y PUNTO ROJO */
     .bell-container {
         position: relative;
         display: inline-block;
         font-size: 26px;
-        cursor: pointer;
     }
-    .bell-icon { color: #facc15; } /* Amarillo */
+    .bell-icon { color: #facc15; }
     
     .red-dot {
         position: absolute;
-        top: 0px;
-        right: 0px;
+        top: -2px;
+        right: -2px;
         height: 12px;
         width: 12px;
-        background-color: #ef4444; /* Rojo */
+        background-color: #ef4444;
         border-radius: 50%;
         border: 2px solid #0f172a;
+        z-index: 10;
     }
 
-    /* Estilo de Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
+    /* FORZAR COLOR AZUL EN EL CONTENIDO DEL POPOVER (NOTIFICACIONES) */
+    div[data-testid="stPopoverContent"] {
+        background-color: #2563eb !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        border-radius: 15px !important;
+        padding: 10px !important;
+    }
+
+    /* Forzar texto blanco dentro del popover */
+    div[data-testid="stPopoverContent"] p, 
+    div[data-testid="stPopoverContent"] small, 
+    div[data-testid="stPopoverContent"] span {
+        color: white !important;
+    }
+
+    /* Estilo para cada item de notificación */
+    .notif-item {
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #facc15;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        font-size: 0.9em;
+        color: white !important;
+    }
+
+    /* Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
     .stButton > button {
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
     }
 
-    /* Forzar estilo AZUL en todos los botones Primary (incluyendo Forms) */
     div.stButton > button[kind="primary"], .stForm div.stButton > button {
         background-color: #2563eb !important;
         color: white !important;
@@ -60,17 +85,6 @@ st.markdown("""
         background-color: #3b82f6 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
-    }
-
-    /* Estilo para Notificaciones */
-    .notif-item {
-        background: rgba(255,255,255,0.08);
-        border-left: 4px solid #facc15;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 8px;
-        font-size: 0.9em;
-        color: #e2e8f0;
     }
 
     .logo-animado {
@@ -100,7 +114,6 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Visibilidad de Inputs */
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #000000 !important; font-weight: 500 !important; }
     div[data-baseweb="select"] > div { background-color: #f8fafc !important; color: #000000 !important; }
@@ -336,25 +349,25 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
-# --- CABECERA COMÚN (CAMBIO: CAMPANA COMO ÚNICO BOTÓN) ---
+# --- CABECERA COMÚN ---
 def render_header():
     col_l, col_n, col_s = st.columns([7, 1, 2])
     with col_l:
         st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
     with col_n:
         nuevas = any(not n.get('leida', False) for n in st.session_state.notificaciones)
-        punto_rojo = '<div class="red-dot"></div>' if nuevas else ""
+        punto_rojo = f'<div class="red-dot"></div>' if nuevas else ""
         
-        # Usamos st.popover para que el menú solo aparezca al hacer clic en la campana
-        with st.popover(f"🔔", use_container_width=False):
-            st.markdown(f"{punto_rojo}", unsafe_allow_html=True) # Mantiene el estilo visual
+        # El contenedor con el icono de la campana
+        with st.popover("🔔", use_container_width=False):
+            st.markdown(punto_rojo, unsafe_allow_html=True) # Punto rojo dentro para referencia
             if not st.session_state.notificaciones:
-                st.caption("Sin actividad reciente.")
+                st.markdown("<p style='text-align:center;'>Sin actividad.</p>", unsafe_allow_html=True)
             else:
                 for n in st.session_state.notificaciones:
                     st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
                     n['leida'] = True
-                if st.button("Limpiar Notificaciones", type="primary", use_container_width=True):
+                if st.button("Limpiar", type="primary", use_container_width=True):
                     st.session_state.notificaciones = []; st.rerun()
     with col_s:
         if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
