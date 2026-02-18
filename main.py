@@ -69,19 +69,9 @@ st.markdown("""
     /* Limpieza de inputs y botones */
     div[data-testid="stInputAdornment"] { display: none !important; }
     div[data-baseweb="input"] { border-radius: 10px !important; border: none !important; background-color: #f8fafc !important; }
-    div[data-baseweb="input"] input { color: #1e293b !important; }
+    div[data-baseweb="input"] input { color: #fff !important; }
 
-    .stButton button, div[data-testid="stForm"] button {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-        color: white !important;
-        border-radius: 12px !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        border: none !important;
-        transition: all 0.3s ease !important;
-        width: 100% !important;
-    }
-    
+  
     .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
 
     /* Estilos de tablas y métricas */
