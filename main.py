@@ -42,20 +42,20 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
     }
 
-    /* FIX: Estilo para Expanders (Pestaña de Cobros y otros) */
-    .st-emotion-cache-p5msec e1f1d6gn4, .st-emotion-cache-1h9965y {
-        color: #60a5fa !important; /* Azul claro para el ID */
-        font-weight: bold !important;
-    }
-    
-    /* Forzar que el texto del expander no cambie a negro al abrirse */
+    /* Estilo para Expanders y Notificaciones */
     details summary p {
         color: #60a5fa !important;
         font-weight: 700 !important;
     }
     
-    [data-testid="stExpander"] {
-        border: 1px solid rgba(96, 165, 250, 0.2) !important;
+    .notif-item {
+        background: rgba(255,255,255,0.08);
+        border-left: 4px solid #60a5fa;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        font-size: 0.9em;
+        color: #e2e8f0;
     }
 
     .logo-animado {
@@ -100,11 +100,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. GESTIÓN DE DATOS (Misma lógica sin cambios) ---
+# --- 2. GESTIÓN DE DATOS ---
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
 PRECIO_POR_UNIDAD = 5.0
+
+if 'notificaciones' not in st.session_state: st.session_state.notificaciones = []
+
+def agregar_notificacion(mensaje):
+    hora = datetime.now().strftime("%H:%M")
+    st.session_state.notificaciones.insert(0, {"msg": mensaje, "hora": hora})
+    if len(st.session_state.notificaciones) > 10: st.session_state.notificaciones.pop()
 
 def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
 def generar_id_unico(): return f"IAC-{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
@@ -119,11 +126,10 @@ def cargar_datos(archivo):
 def guardar_datos(datos, archivo): pd.DataFrame(datos).to_csv(archivo, index=False)
 
 def obtener_icono_transporte(tipo):
-    if tipo == "Aéreo": return "✈️"
-    elif tipo == "Marítimo": return "🚢"
-    elif tipo == "Envio Nacional": return "🚚"
-    return "📦"
+    iconos = {"Aéreo": "✈️", "Marítimo": "🚢", "Envio Nacional": "🚚"}
+    return iconos.get(tipo, "📦")
 
+# --- Inicialización de Session State ---
 if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
 if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
@@ -132,6 +138,7 @@ if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
 # --- 3. FUNCIONES DE DASHBOARD ---
+
 def render_admin_dashboard():
     st.title(" Consola de Control Logístico")
     tabs = st.tabs([" REGISTRO", " VALIDACIÓN", " COBROS", " ESTADOS", " AUDITORÍA/EDICIÓN", " RESUMEN"])
@@ -155,6 +162,7 @@ def render_admin_dashboard():
                     st.session_state.inventario.append(nuevo)
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     st.session_state.id_actual = generar_id_unico()
+                    agregar_notificacion(f"Nuevo registro: {f_id} para {f_cli}")
                     st.success(f"Guía {f_id} registrada."); st.rerun()
 
     with t_val:
@@ -169,7 +177,9 @@ def render_admin_dashboard():
                 paq['Peso_Almacen'] = peso_real
                 paq['Validado'] = True
                 paq['Monto_USD'] = peso_real * PRECIO_POR_UNIDAD
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Validado correctamente."); st.rerun()
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                agregar_notificacion(f"Validación exitosa: {guia_v} con {peso_real} unidades.")
+                st.success("Validado correctamente."); st.rerun()
         else: st.info("No hay paquetes por validar.")
 
     with t_cob:
@@ -177,13 +187,14 @@ def render_admin_dashboard():
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
-            # El Expander ahora mantendrá el color azul configurado en el CSS arriba
-            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Pendiente: ${rest:.2f})"):
+            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
                 m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p['Abonado'] = abo + m_abono
                     if (total - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                    agregar_notificacion(f"Pago registrado: ${m_abono} para guía {p['ID_Barra']}")
+                    st.rerun()
 
     with t_est:
         st.subheader(" Estatus de Logística")
@@ -192,8 +203,11 @@ def render_admin_dashboard():
             n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"])
             if st.button("ACTUALIZAR ESTATUS", type="primary"):
                 for p in st.session_state.inventario:
-                    if p["ID_Barra"] == sel_e: p["Estado"] = n_st
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                    if p["ID_Barra"] == sel_e: 
+                        p["Estado"] = n_st
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                agregar_notificacion(f"Estatus actualizado: {sel_e} ahora está {n_st}")
+                st.rerun()
 
     with t_aud:
         st.subheader(" Auditoría y Edición")
@@ -204,7 +218,9 @@ def render_admin_dashboard():
                     paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA)
+                    agregar_notificacion(f"Registro restaurado: {guia_res}")
+                    st.rerun()
             else: st.info("La papelera está vacía.")
         else:
             busq_aud = st.text_input(" Buscar por Guía en Auditoría:", key="aud_search_input")
@@ -228,12 +244,16 @@ def render_admin_dashboard():
                 with btn_col1:
                     if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
                         paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
-                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB)
+                        agregar_notificacion(f"Cambios manuales en guía: {guia_ed}")
+                        st.success("Cambios guardados"); st.rerun()
                 with btn_col2:
                     if st.button("🗑️ ELIMINAR REGISTRO", use_container_width=True, type="primary"):
                         st.session_state.papelera.append(paq_ed)
                         st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
-                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.warning(f"Guía {guia_ed} movida a papelera."); st.rerun()
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA)
+                        agregar_notificacion(f"Movido a papelera: {guia_ed}")
+                        st.warning(f"Guía {guia_ed} movida a papelera."); st.rerun()
 
     with t_res:
         st.subheader(" Resumen General de Carga")
@@ -250,6 +270,7 @@ def render_admin_dashboard():
         busq_res = st.text_input(" Buscar caja por código:", key="res_search_admin")
         df_res = pd.DataFrame(st.session_state.inventario)
         if busq_res and not df_res.empty: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_res, case=False)]
+        
         for est_k, est_l, _ in [("RECIBIDO ALMACEN PRINCIPAL", " EN ALMACÉN", "Almacén"), ("EN TRANSITO", " EN TRÁNSITO", "Tránsito"), ("ENTREGADO", " ENTREGADO", "Entregado")]:
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
             with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
@@ -263,10 +284,11 @@ def render_client_dashboard():
     busq_cli = st.text_input(" Buscar mis paquetes por código de barra:", key="cli_search_input")
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
     if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in str(p.get('ID_Barra')).lower()]
+    
     if not mis_p:
-        st.info("Actualmente no tienes envíos registrados en el sistema.")
+        st.info("Actualmente no tienes envíos registrados.")
     else:
-        st.write(f"Has registrado **{len(mis_p)}** paquete(s):")
+        st.write(f"Tienes **{len(mis_p)}** paquete(s):")
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
@@ -281,7 +303,7 @@ def render_client_dashboard():
                             <span class="{badge_class}">{p.get('Pago')}</span>
                         </div>
                         <div style="font-size:1em; margin-bottom:15px;">
-                             <b>Estado actual:</b> {p['Estado']}<br>
+                             <b>Estado:</b> {p['Estado']}<br>
                              <b>Modalidad:</b> {p.get('Modalidad', 'N/A')}
                         </div>
                         <div style="background: rgba(255,255,255,0.08); border-radius:12px; padding:15px;">
@@ -299,29 +321,43 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
-# --- SISTEMA DE LOGIN Y LANDING ---
+# --- CABECERA COMÚN (SISTEMA DE NOTIFICACIONES + LOGOUT) ---
+def render_header():
+    col_l, col_n, col_s = st.columns([6, 2, 2])
+    with col_l:
+        st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
+    with col_n:
+        num = len(st.session_state.notificaciones)
+        with st.expander(f"🔔 Actividad ({num})"):
+            if not st.session_state.notificaciones:
+                st.caption("Sin actividad reciente.")
+            else:
+                for n in st.session_state.notificaciones:
+                    st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
+                if st.button("Limpiar Notificaciones", type="primary", use_container_width=True):
+                    st.session_state.notificaciones = []; st.rerun()
+    with col_s:
+        if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
+            st.session_state.usuario_identificado = None
+            st.session_state.landing_vista = True
+            st.rerun()
+
+# --- LÓGICA DE NAVEGACIÓN ---
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         st.markdown("<br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown("""
-                <div style="text-align:center;">
-                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
-                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
-                    <div style="height:40px;"></div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div style="text-align:center;"><h1 class="logo-animado" style="font-size:80px;">IACargo.io</h1><p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p></div>', unsafe_allow_html=True)
             if st.button("INGRESAR AL SISTEMA", use_container_width=True, type="primary"):
                 st.session_state.landing_vista = False; st.rerun()
-            st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
     else:
         c1, c2, c3 = st.columns([1, 1.5, 1])
         with c2:
             st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
             t1, t2 = st.tabs(["Ingresar", "Registrarse"])
             with t1:
-                with st.form("login_form"):
+                with st.form("login"):
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
                     if st.form_submit_button("Entrar", type="primary", use_container_width=True):
                         if le == "admin" and lp == "admin123":
@@ -330,22 +366,16 @@ if st.session_state.usuario_identificado is None:
                         if u: st.session_state.usuario_identificado = u; st.rerun()
                         else: st.error("Credenciales incorrectas")
             with t2:
-                with st.form("signup_form"):
+                with st.form("signup"):
                     n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
                     if st.form_submit_button("Crear Cuenta", type="primary", use_container_width=True):
                         st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
                         guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
             if st.button(" Volver", type="primary", use_container_width=True):
                 st.session_state.landing_vista = True; st.rerun()
-
 else:
-    with st.container():
-        cols = st.columns([7, 2])
-        with cols[1]:
-            if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
-                st.session_state.usuario_identificado = None
-                st.session_state.landing_vista = True
-                st.rerun()
-
-    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
-    else: render_client_dashboard()
+    render_header()
+    if st.session_state.usuario_identificado.get('rol') == "admin":
+        render_admin_dashboard()
+    else:
+        render_client_dashboard()
