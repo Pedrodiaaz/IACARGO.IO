@@ -296,3 +296,51 @@ if st.session_state.usuario_identificado is None:
         with col2:
             st.markdown("""
                 <div style="text-align:center;">
+                    <h1 class="logo-animado" style="font-size:80px; margin-bottom:0px;">IACargo.io</h1>
+                    <p style="font-size:22px; color:#94a3b8; font-style:italic;">"La existencia es un milagro"</p>
+                    <div style="height:40px;"></div>
+                </div>
+            """, unsafe_allow_html=True)
+            if st.button(" INGRESAR AL SISTEMA", use_container_width=True):
+                st.session_state.landing_vista = False; st.rerun()
+            st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
+    else:
+        c1, c2, c3 = st.columns([1, 1.5, 1])
+        with c2:
+            st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
+            t1, t2 = st.tabs(["Ingresar", "Registrarse"])
+            with t1:
+                with st.form("login_form"):
+                    le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
+                    if st.form_submit_button("Entrar"):
+                        if le == "admin" and lp == "admin123":
+                            st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
+                        u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
+                        if u: st.session_state.usuario_identificado = u; st.rerun()
+                        else: st.error("Credenciales incorrectas")
+            with t2:
+                with st.form("signup_form"):
+                    n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
+                    if st.form_submit_button("Crear Cuenta"):
+                        st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                        guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
+            if st.button(" Volver"):
+                st.session_state.landing_vista = True; st.rerun()
+
+else:
+    st.markdown(f"""
+        <div class="logout-container">
+            <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    with st.container():
+        cols = st.columns([7, 2])
+        with cols[1]:
+            if st.button("CERRAR SESIÓN "):
+                st.session_state.usuario_identificado = None
+                st.session_state.landing_vista = True
+                st.rerun()
+
+    if st.session_state.usuario_identificado.get('rol') == "admin": render_admin_dashboard()
+    else: render_client_dashboard()
