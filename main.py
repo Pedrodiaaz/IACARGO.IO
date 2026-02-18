@@ -83,30 +83,8 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* --- BOTONES DE ACCIÓN (Azul con Letras Blancas) --- */
-    .stButton > button {
-        background-color: #2563eb !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 0.6rem 1.2rem !important;
-        font-weight: 700 !important;
-        width: 100%;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2) !important;
-    }
-    
-    .stButton > button:hover {
-        background-color: #1d4ed8 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
-    }
+    .stButton button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important; }
 
-    .stButton > button:active {
-        transform: translateY(0px) !important;
-    }
-
-    /* Estilos de tablas y métricas */
     .metric-container { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
     .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
@@ -135,6 +113,7 @@ def cargar_datos(archivo):
     return []
 def guardar_datos(datos, archivo): pd.DataFrame(datos).to_csv(archivo, index=False)
 
+# Función auxiliar para obtener icono de transporte
 def obtener_icono_transporte(tipo):
     if tipo == "Aéreo": return "✈️"
     elif tipo == "Marítimo": return "🚢"
@@ -165,7 +144,7 @@ def render_admin_dashboard():
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input(label_din, min_value=0.0, step=0.1)
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            if st.form_submit_button("REGISTRAR EN SISTEMA"):
+            if st.form_submit_button("Registrar en Sistema"):
                 if f_id and f_cli and f_cor:
                     nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
                     st.session_state.inventario.append(nuevo)
@@ -181,7 +160,7 @@ def render_admin_dashboard():
             paq = next(p for p in pendientes if p["ID_Barra"] == guia_v)
             st.info(f"Reportado por mensajero: {paq['Peso_Mensajero']}")
             peso_real = st.number_input(f"Peso Real en Almacén", min_value=0.0, value=float(paq['Peso_Mensajero']))
-            if st.button("CONFIRMAR Y VALIDAR"):
+            if st.button(" Confirmar y Validar"):
                 paq['Peso_Almacen'] = peso_real
                 paq['Validado'] = True
                 paq['Monto_USD'] = peso_real * PRECIO_POR_UNIDAD
@@ -195,7 +174,7 @@ def render_admin_dashboard():
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
             with st.expander(f" {p['ID_Barra']} - {p['Cliente']} (Faltan: ${rest:.2f})"):
                 m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
-                if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}"):
+                if st.button(f"Registrar Pago", key=f"bp_{p['ID_Barra']}"):
                     p['Abonado'] = abo + m_abono
                     if (total - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
@@ -205,7 +184,7 @@ def render_admin_dashboard():
         if st.session_state.inventario:
             sel_e = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="status_sel")
             n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"])
-            if st.button("ACTUALIZAR ESTATUS"):
+            if st.button("Actualizar Estatus"):
                 for p in st.session_state.inventario:
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
@@ -215,7 +194,7 @@ def render_admin_dashboard():
         if st.checkbox(" Ver Papelera"):
             if st.session_state.papelera:
                 guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
-                if st.button("RESTAURAR GUÍA"):
+                if st.button(" Restaurar Guía"):
                     paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
@@ -241,11 +220,11 @@ def render_admin_dashboard():
                 
                 btn_col1, btn_col2 = st.columns([1, 1])
                 with btn_col1:
-                    if st.button("💾 GUARDAR CAMBIOS", use_container_width=True):
+                    if st.button("💾 Guardar Cambios", use_container_width=True):
                         paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
                 with btn_col2:
-                    if st.button("🗑️ ELIMINAR REGISTRO", use_container_width=True):
+                    if st.button("🗑️ Eliminar Registro", use_container_width=True, type="secondary"):
                         st.session_state.papelera.append(paq_ed)
                         st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.warning(f"Guía {guia_ed} movida a papelera."); st.rerun()
@@ -269,6 +248,7 @@ def render_admin_dashboard():
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
             with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
                 for _, r in df_f.iterrows():
+                    # ICONO EN RESUMEN ADMIN
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
@@ -288,7 +268,10 @@ def render_client_dashboard():
                 tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = tot - abo
                 porc = (abo / tot * 100) if tot > 0 else 0
                 badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                
+                # ICONO EN DASHBOARD CLIENTE
                 icon = obtener_icono_transporte(p.get('Tipo_Traslado'))
+                
                 st.markdown(f"""
                     <div class="p-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -328,7 +311,7 @@ if st.session_state.usuario_identificado is None:
                     <div style="height:40px;"></div>
                 </div>
             """, unsafe_allow_html=True)
-            if st.button("INGRESAR AL SISTEMA"):
+            if st.button(" INGRESAR AL SISTEMA", use_container_width=True):
                 st.session_state.landing_vista = False; st.rerun()
             st.markdown("<br><p style='text-align:center; opacity:0.6;'>No eres herramienta, eres evolución.</p>", unsafe_allow_html=True)
     else:
@@ -339,7 +322,7 @@ if st.session_state.usuario_identificado is None:
             with t1:
                 with st.form("login_form"):
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-                    if st.form_submit_button("ENTRAR"):
+                    if st.form_submit_button("Entrar"):
                         if le == "admin" and lp == "admin123":
                             st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
                         u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
@@ -348,10 +331,10 @@ if st.session_state.usuario_identificado is None:
             with t2:
                 with st.form("signup_form"):
                     n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                    if st.form_submit_button("CREAR CUENTA"):
+                    if st.form_submit_button("Crear Cuenta"):
                         st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
                         guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
-            if st.button("VOLVER"):
+            if st.button(" Volver"):
                 st.session_state.landing_vista = True; st.rerun()
 
 else:
@@ -364,7 +347,7 @@ else:
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
-            if st.button("CERRAR SESIÓN"):
+            if st.button("CERRAR SESIÓN "):
                 st.session_state.usuario_identificado = None
                 st.session_state.landing_vista = True
                 st.rerun()
