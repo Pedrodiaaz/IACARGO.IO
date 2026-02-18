@@ -39,33 +39,35 @@ st.markdown("""
         z-index: 10;
     }
 
-    /* FORZAR COLOR AZUL EN EL CONTENIDO DEL POPOVER (NOTIFICACIONES) */
+    /* --- CAMBIO SOLICITADO: FONDO BLANCO PARA NOTIFICACIONES --- */
     div[data-testid="stPopoverContent"] {
-        background-color: #2563eb !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
+        background-color: #ffffff !important;
+        border: 1px solid rgba(0,0,0,0.1) !important;
         border-radius: 15px !important;
         padding: 10px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
     }
 
-    /* Forzar texto blanco dentro del popover */
+    /* Letras Negras/Oscuras dentro del popover para contraste */
     div[data-testid="stPopoverContent"] p, 
     div[data-testid="stPopoverContent"] small, 
-    div[data-testid="stPopoverContent"] span {
-        color: white !important;
+    div[data-testid="stPopoverContent"] span,
+    div[data-testid="stPopoverContent"] b {
+        color: #1e293b !important;
     }
 
-    /* Estilo para cada item de notificación */
+    /* Estilo para cada item de notificación individual */
     .notif-item {
-        background: rgba(255, 255, 255, 0.1);
-        border-left: 4px solid #facc15;
+        background: #f1f5f9; /* Fondo gris muy claro para cada item */
+        border-left: 4px solid #2563eb; /* Línea azul lateral */
         padding: 10px;
         margin-bottom: 8px;
         border-radius: 8px;
         font-size: 0.9em;
-        color: white !important;
+        color: #1e293b !important;
     }
 
-    /* Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
+    /* Botones de Acción */
     .stButton > button {
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
@@ -358,9 +360,8 @@ def render_header():
         nuevas = any(not n.get('leida', False) for n in st.session_state.notificaciones)
         punto_rojo = f'<div class="red-dot"></div>' if nuevas else ""
         
-        # El contenedor con el icono de la campana
         with st.popover("🔔", use_container_width=False):
-            st.markdown(punto_rojo, unsafe_allow_html=True) # Punto rojo dentro para referencia
+            st.markdown(punto_rojo, unsafe_allow_html=True)
             if not st.session_state.notificaciones:
                 st.markdown("<p style='text-align:center;'>Sin actividad.</p>", unsafe_allow_html=True)
             else:
