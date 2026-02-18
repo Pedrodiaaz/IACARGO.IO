@@ -132,7 +132,6 @@ def render_admin_dashboard():
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input(label_din, min_value=0.0, step=0.1)
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            # BOTÓN AZUL (Primary)
             if st.form_submit_button("REGISTRAR EN SISTEMA", type="primary"):
                 if f_id and f_cli and f_cor:
                     nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
@@ -149,7 +148,6 @@ def render_admin_dashboard():
             paq = next(p for p in pendientes if p["ID_Barra"] == guia_v)
             st.info(f"Reportado por mensajero: {paq['Peso_Mensajero']}")
             peso_real = st.number_input(f"Peso Real en Almacén", min_value=0.0, value=float(paq['Peso_Mensajero']))
-            # BOTÓN AZUL (Primary)
             if st.button("CONFIRMAR Y VALIDAR", type="primary"):
                 paq['Peso_Almacen'] = peso_real
                 paq['Validado'] = True
@@ -164,7 +162,6 @@ def render_admin_dashboard():
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
             with st.expander(f" {p['ID_Barra']} - {p['Cliente']} (Faltan: ${rest:.2f})"):
                 m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
-                # BOTÓN AZUL (Primary)
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p['Abonado'] = abo + m_abono
                     if (total - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
@@ -175,7 +172,6 @@ def render_admin_dashboard():
         if st.session_state.inventario:
             sel_e = st.selectbox("Seleccione Guía:", [p["ID_Barra"] for p in st.session_state.inventario], key="status_sel")
             n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"])
-            # BOTÓN AZUL (Primary)
             if st.button("ACTUALIZAR ESTATUS", type="primary"):
                 for p in st.session_state.inventario:
                     if p["ID_Barra"] == sel_e: p["Estado"] = n_st
@@ -187,7 +183,7 @@ def render_admin_dashboard():
             if st.session_state.papelera:
                 guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
                 if st.button("Restaurar Guía"):
-                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] != guia_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
@@ -212,13 +208,12 @@ def render_admin_dashboard():
                 
                 btn_col1, btn_col2 = st.columns([1, 1])
                 with btn_col1:
-                    # BOTÓN AZUL (Primary)
                     if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
                         paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
                 with btn_col2:
-                    # Botón secundario para eliminar (mantiene estética sobria para no confundir)
-                    if st.button("🗑️ ELIMINAR REGISTRO", use_container_width=True):
+                    # CAMBIO APLICADO AQUÍ: Se agregó type="primary"
+                    if st.button("🗑️ ELIMINAR REGISTRO", use_container_width=True, type="primary"):
                         st.session_state.papelera.append(paq_ed)
                         st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.warning(f"Guía {guia_ed} movida a papelera."); st.rerun()
@@ -244,8 +239,6 @@ def render_admin_dashboard():
                 for _, r in df_f.iterrows():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
-
-# --- (Renderizado de Cliente y Acceso se mantienen igual) ---
 
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
