@@ -23,21 +23,20 @@ st.markdown("""
     .bell-container {
         position: relative;
         display: inline-block;
-        font-size: 24px;
-        line-height: 1;
-        padding-top: 5px;
+        font-size: 26px;
+        cursor: pointer;
     }
     .bell-icon { color: #facc15; } /* Amarillo */
     
     .red-dot {
         position: absolute;
-        top: 2px;
-        right: -2px;
-        height: 10px;
-        width: 10px;
+        top: 0px;
+        right: 0px;
+        height: 12px;
+        width: 12px;
         background-color: #ef4444; /* Rojo */
         border-radius: 50%;
-        border: 1.5px solid #0f172a;
+        border: 2px solid #0f172a;
     }
 
     /* Estilo de Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
@@ -63,12 +62,7 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
     }
 
-    /* Estilo para Expanders y Notificaciones */
-    details summary p {
-        color: #60a5fa !important;
-        font-weight: 700 !important;
-    }
-    
+    /* Estilo para Notificaciones */
     .notif-item {
         background: rgba(255,255,255,0.08);
         border-left: 4px solid #facc15;
@@ -131,7 +125,6 @@ if 'notificaciones' not in st.session_state: st.session_state.notificaciones = [
 
 def agregar_notificacion(mensaje):
     hora = datetime.now().strftime("%H:%M")
-    # Agregamos campo 'leida' para controlar el punto rojo
     st.session_state.notificaciones.insert(0, {"msg": mensaje, "hora": hora, "leida": False})
     if len(st.session_state.notificaciones) > 10: st.session_state.notificaciones.pop()
 
@@ -159,7 +152,7 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. FUNCIONES DE DASHBOARD (SIN ALTERACIONES) ---
+# --- 3. FUNCIONES DE DASHBOARD ---
 
 def render_admin_dashboard():
     st.title(" Consola de Control Logístico")
@@ -343,32 +336,24 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
-# --- CABECERA COMÚN CON CAMBIOS EN LA CAMPANA ---
+# --- CABECERA COMÚN (CAMBIO: CAMPANA COMO ÚNICO BOTÓN) ---
 def render_header():
-    col_l, col_n, col_s = st.columns([6, 2, 2])
+    col_l, col_n, col_s = st.columns([7, 1, 2])
     with col_l:
         st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
     with col_n:
-        # Lógica de la campana amarilla con punto rojo
         nuevas = any(not n.get('leida', False) for n in st.session_state.notificaciones)
         punto_rojo = '<div class="red-dot"></div>' if nuevas else ""
-        num = len(st.session_state.notificaciones)
         
-        # HTML de la campana
-        st.markdown(f"""
-            <div class="bell-container">
-                <span class="bell-icon">🔔</span>
-                {punto_rojo}
-            </div>
-        """, unsafe_allow_html=True)
-        
-        with st.expander(f"Actividad ({num})"):
+        # Usamos st.popover para que el menú solo aparezca al hacer clic en la campana
+        with st.popover(f"🔔", use_container_width=False):
+            st.markdown(f"{punto_rojo}", unsafe_allow_html=True) # Mantiene el estilo visual
             if not st.session_state.notificaciones:
                 st.caption("Sin actividad reciente.")
             else:
                 for n in st.session_state.notificaciones:
                     st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
-                    n['leida'] = True # Marcar como leída al abrir
+                    n['leida'] = True
                 if st.button("Limpiar Notificaciones", type="primary", use_container_width=True):
                     st.session_state.notificaciones = []; st.rerun()
     with col_s:
@@ -377,7 +362,7 @@ def render_header():
             st.session_state.landing_vista = True
             st.rerun()
 
-# --- LÓGICA DE NAVEGACIÓN (SIN ALTERACIONES) ---
+# --- LÓGICA DE NAVEGACIÓN ---
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         st.markdown("<br><br><br>", unsafe_allow_html=True)
