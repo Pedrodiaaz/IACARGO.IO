@@ -42,6 +42,22 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
     }
 
+    /* FIX: Estilo para Expanders (Pestaña de Cobros y otros) */
+    .st-emotion-cache-p5msec e1f1d6gn4, .st-emotion-cache-1h9965y {
+        color: #60a5fa !important; /* Azul claro para el ID */
+        font-weight: bold !important;
+    }
+    
+    /* Forzar que el texto del expander no cambie a negro al abrirse */
+    details summary p {
+        color: #60a5fa !important;
+        font-weight: 700 !important;
+    }
+    
+    [data-testid="stExpander"] {
+        border: 1px solid rgba(96, 165, 250, 0.2) !important;
+    }
+
     .logo-animado {
         font-style: italic !important;
         font-family: 'Georgia', serif;
@@ -84,7 +100,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. GESTIÓN DE DATOS ---
+# --- 2. GESTIÓN DE DATOS (Misma lógica sin cambios) ---
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
@@ -161,7 +177,8 @@ def render_admin_dashboard():
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
-            with st.expander(f" {p['ID_Barra']} - {p['Cliente']} (Faltan: ${rest:.2f})"):
+            # El Expander ahora mantendrá el color azul configurado en el CSS arriba
+            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Pendiente: ${rest:.2f})"):
                 m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p['Abonado'] = abo + m_abono
@@ -282,6 +299,7 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
+# --- SISTEMA DE LOGIN Y LANDING ---
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -305,7 +323,6 @@ if st.session_state.usuario_identificado is None:
             with t1:
                 with st.form("login_form"):
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-                    # BOTÓN ENTRAR (Ahora AZUL)
                     if st.form_submit_button("Entrar", type="primary", use_container_width=True):
                         if le == "admin" and lp == "admin123":
                             st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
@@ -315,7 +332,6 @@ if st.session_state.usuario_identificado is None:
             with t2:
                 with st.form("signup_form"):
                     n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                    # BOTÓN CREAR CUENTA (Ahora AZUL)
                     if st.form_submit_button("Crear Cuenta", type="primary", use_container_width=True):
                         st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
                         guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
@@ -323,12 +339,6 @@ if st.session_state.usuario_identificado is None:
                 st.session_state.landing_vista = True; st.rerun()
 
 else:
-    st.markdown(f"""
-        <div class="logout-container">
-            <span style="color:#60a5fa; font-weight:bold; font-size:0.9em;">Socio: {st.session_state.usuario_identificado['nombre']}</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
