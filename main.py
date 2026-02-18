@@ -113,6 +113,13 @@ def cargar_datos(archivo):
     return []
 def guardar_datos(datos, archivo): pd.DataFrame(datos).to_csv(archivo, index=False)
 
+# Función auxiliar para obtener icono de transporte
+def obtener_icono_transporte(tipo):
+    if tipo == "Aéreo": return "✈️"
+    elif tipo == "Marítimo": return "🚢"
+    elif tipo == "Envio Nacional": return "🚚"
+    return "📦"
+
 if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
 if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
@@ -209,7 +216,7 @@ def render_admin_dashboard():
                 c1, c2, c3 = st.columns(3)
                 n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
                 n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
-                n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=0 if paq_ed['Tipo_Traslado']=="Aéreo" else 1, key=f"nt_{paq_ed['ID_Barra']}")
+                n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=["Aéreo", "Marítimo", "Envio Nacional"].index(paq_ed.get('Tipo_Traslado', 'Aéreo')), key=f"nt_{paq_ed['ID_Barra']}")
                 
                 btn_col1, btn_col2 = st.columns([1, 1])
                 with btn_col1:
@@ -217,13 +224,10 @@ def render_admin_dashboard():
                         paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
                 with btn_col2:
-                    # BOTÓN DE ELIMINAR (Hacia Papelera)
                     if st.button("🗑️ Eliminar Registro", use_container_width=True, type="secondary"):
                         st.session_state.papelera.append(paq_ed)
                         st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
-                        guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                        guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA)
-                        st.warning(f"Guía {guia_ed} movida a la papelera."); st.rerun()
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.warning(f"Guía {guia_ed} movida a papelera."); st.rerun()
 
     with t_res:
         st.subheader(" Resumen General de Carga")
@@ -244,7 +248,9 @@ def render_admin_dashboard():
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
             with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
                 for _, r in df_f.iterrows():
-                    st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
+                    # ICONO EN RESUMEN ADMIN
+                    icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
+                    st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
@@ -262,10 +268,14 @@ def render_client_dashboard():
                 tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = tot - abo
                 porc = (abo / tot * 100) if tot > 0 else 0
                 badge_class = "badge-paid" if p.get('Pago') == "PAGADO" else "badge-debt"
+                
+                # ICONO EN DASHBOARD CLIENTE
+                icon = obtener_icono_transporte(p.get('Tipo_Traslado'))
+                
                 st.markdown(f"""
                     <div class="p-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                            <span style="color:#60a5fa; font-weight:800; font-size:1.3em;">#{p['ID_Barra']}</span>
+                            <span style="color:#60a5fa; font-weight:800; font-size:1.3em;">{icon} #{p['ID_Barra']}</span>
                             <span class="{badge_class}">{p.get('Pago')}</span>
                         </div>
                         <div style="font-size:1em; margin-bottom:15px;">
