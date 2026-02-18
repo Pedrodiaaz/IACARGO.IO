@@ -132,7 +132,9 @@ def render_admin_dashboard():
             f_cor = st.text_input("Correo del Cliente")
             f_pes = st.number_input(label_din, min_value=0.0, step=0.1)
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
-            if st.form_submit_button("REGISTRAR EN SISTEMA", type="primary"):
+            
+            # BOTÓN AZUL (PRIMARY) - REGISTRAR EN SISTEMA
+            if st.form_submit_button("REGISTRAR EN SISTEMA", type="primary", use_container_width=True):
                 if f_id and f_cli and f_cor:
                     nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
                     st.session_state.inventario.append(nuevo)
@@ -182,8 +184,8 @@ def render_admin_dashboard():
         if st.checkbox(" Ver Papelera"):
             if st.session_state.papelera:
                 guia_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
-                if st.button("Restaurar Guía"):
-                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] != guia_res)
+                if st.button("Restaurar Guía", type="primary"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == guia_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != guia_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
@@ -212,7 +214,6 @@ def render_admin_dashboard():
                         paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Cambios guardados"); st.rerun()
                 with btn_col2:
-                    # CAMBIO APLICADO AQUÍ: Se agregó type="primary"
                     if st.button("🗑️ ELIMINAR REGISTRO", use_container_width=True, type="primary"):
                         st.session_state.papelera.append(paq_ed)
                         st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != guia_ed]
@@ -305,7 +306,7 @@ if st.session_state.usuario_identificado is None:
             with t1:
                 with st.form("login_form"):
                     le = st.text_input("Correo"); lp = st.text_input("Clave", type="password")
-                    if st.form_submit_button("Entrar", type="primary"):
+                    if st.form_submit_button("Entrar", type="primary", use_container_width=True):
                         if le == "admin" and lp == "admin123":
                             st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin"}; st.rerun()
                         u = next((u for u in st.session_state.usuarios if u['correo'] == le.lower().strip() and u['password'] == hash_password(lp)), None)
@@ -314,10 +315,10 @@ if st.session_state.usuario_identificado is None:
             with t2:
                 with st.form("signup_form"):
                     n = st.text_input("Nombre"); e = st.text_input("Correo"); p = st.text_input("Clave", type="password")
-                    if st.form_submit_button("Crear Cuenta", type="primary"):
+                    if st.form_submit_button("Crear Cuenta", type="primary", use_container_width=True):
                         st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
                         guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("Cuenta creada."); st.rerun()
-            if st.button(" Volver"):
+            if st.button(" Volver", type="primary", use_container_width=True):
                 st.session_state.landing_vista = True; st.rerun()
 
 else:
@@ -330,7 +331,8 @@ else:
     with st.container():
         cols = st.columns([7, 2])
         with cols[1]:
-            if st.button("CERRAR SESIÓN"):
+            # BOTÓN AZUL (PRIMARY) - CERRAR SESIÓN
+            if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
                 st.session_state.usuario_identificado = None
                 st.session_state.landing_vista = True
                 st.rerun()
