@@ -19,7 +19,7 @@ st.markdown("""
     
     [data-testid="stSidebar"] { display: none; }
     
-    /* ESTILO ESPECÍFICO DE LA CAMPANA Y POP-OVER */
+    /* ESTILO ESPECÍFICO DE LA CAMPANA AMARILLA Y PUNTO ROJO */
     .bell-container {
         position: relative;
         display: inline-block;
@@ -39,34 +39,13 @@ st.markdown("""
         border: 2px solid #0f172a;
     }
 
-    /* ESTILO DEL MENÚ DESPLEGABLE DE LA CAMPANA */
-    [data-testid="stPopoverBody"] {
-        background-color: #2563eb !important; /* Fondo Azul */
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 15px;
-    }
-    
-    [data-testid="stPopoverBody"] p, [data-testid="stPopoverBody"] span, [data-testid="stPopoverBody"] b {
-        color: white !important; /* Letras Blancas */
-    }
-
-    /* Estilo para Notificaciones Individuales dentro del Popover */
-    .notif-item {
-        background: rgba(255, 255, 255, 0.15);
-        border-left: 4px solid #facc15;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 8px;
-        font-size: 0.9em;
-        color: white !important;
-    }
-
-    /* Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
+    /* Estilo de Botones de Acción (UNIFICACIÓN TOTAL A AZUL) */
     .stButton > button {
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
     }
 
+    /* Forzar estilo AZUL en todos los botones Primary (incluyendo Forms) */
     div.stButton > button[kind="primary"], .stForm div.stButton > button {
         background-color: #2563eb !important;
         color: white !important;
@@ -81,6 +60,17 @@ st.markdown("""
         background-color: #3b82f6 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
+    }
+
+    /* Estilo para Notificaciones */
+    .notif-item {
+        background: rgba(255,255,255,0.08);
+        border-left: 4px solid #facc15;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        font-size: 0.9em;
+        color: #e2e8f0;
     }
 
     .logo-animado {
@@ -110,6 +100,7 @@ st.markdown("""
         color: white !important;
     }
 
+    /* Visibilidad de Inputs */
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #000000 !important; font-weight: 500 !important; }
     div[data-baseweb="select"] > div { background-color: #f8fafc !important; color: #000000 !important; }
@@ -345,7 +336,7 @@ def render_client_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
 
-# --- CABECERA COMÚN CON MENÚ AZUL ---
+# --- CABECERA COMÚN (CAMBIO: CAMPANA COMO ÚNICO BOTÓN) ---
 def render_header():
     col_l, col_n, col_s = st.columns([7, 1, 2])
     with col_l:
@@ -354,8 +345,9 @@ def render_header():
         nuevas = any(not n.get('leida', False) for n in st.session_state.notificaciones)
         punto_rojo = '<div class="red-dot"></div>' if nuevas else ""
         
+        # Usamos st.popover para que el menú solo aparezca al hacer clic en la campana
         with st.popover(f"🔔", use_container_width=False):
-            st.markdown(f"{punto_rojo}", unsafe_allow_html=True)
+            st.markdown(f"{punto_rojo}", unsafe_allow_html=True) # Mantiene el estilo visual
             if not st.session_state.notificaciones:
                 st.caption("Sin actividad reciente.")
             else:
