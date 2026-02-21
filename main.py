@@ -124,8 +124,16 @@ st.markdown("""
         color: white !important;
     }
     
-    [data-testid="stExpander"] summary:hover {
+    /* CAMBIO SOLICITADO: Mantener color estático en el encabezado del expander */
+    [data-testid="stExpander"] summary {
+        color: white !important;
+    }
+
+    [data-testid="stExpander"] summary:hover, 
+    [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary[aria-expanded="true"] {
         background-color: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
         border-radius: 15px;
     }
 
@@ -272,7 +280,6 @@ def render_admin_dashboard():
                 n_val = c2.number_input("Valor", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
                 n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=["Aéreo", "Marítimo", "Envio Nacional"].index(paq_ed.get('Tipo_Traslado', 'Aéreo')), key=f"nt_{paq_ed['ID_Barra']}")
                 
-                # BOTONES DE ACCIÓN (Ahora ambos con type="primary" para fondo azul y letras blancas)
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
                     if st.button("💾 GUARDAR CAMBIOS", type="primary", use_container_width=True):
