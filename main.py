@@ -108,7 +108,7 @@ st.markdown("""
         100% { transform: scale(1); opacity: 0.9; }
     }
 
-    /* --- AJUSTE PARA EXPANDERS (ESTÁTICO) --- */
+    /* --- AJUSTE PARA EXPANDERS --- */
     .stTabs, .stForm, [data-testid="stExpander"] {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px);
@@ -119,14 +119,7 @@ st.markdown("""
         color: white !important;
     }
 
-    [data-testid="stExpander"] summary { background-color: transparent !important; color: white !important; }
-    [data-testid="stExpander"] summary:hover, [data-testid="stExpander"] summary:focus, [data-testid="stExpander"] summary[aria-expanded="true"] {
-        background-color: rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border-radius: 15px;
-    }
-
-    /* --- TARJETAS DEL CLIENTE (VISUAL MEJORADO) --- */
+    /* --- TARJETAS DEL CLIENTE --- */
     .p-card {
         background: rgba(255, 255, 255, 0.07) !important;
         backdrop-filter: blur(15px);
@@ -140,8 +133,7 @@ st.markdown("""
 
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #000000 !important; font-weight: 500 !important; }
-    div[data-baseweb="select"] > div { background-color: #f8fafc !important; color: #000000 !important; }
-
+    
     .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
     
@@ -160,10 +152,6 @@ def calcular_monto(valor, tipo):
     else: return valor * 5.0
 
 if 'notificaciones' not in st.session_state: st.session_state.notificaciones = []
-
-def agregar_notificacion(mensaje):
-    hora = datetime.now().strftime("%H:%M")
-    st.session_state.notificaciones.insert(0, {"msg": mensaje, "hora": hora, "leida": False})
 
 def hash_password(password): return hashlib.sha256(str.encode(password)).hexdigest()
 def generar_id_unico(): return f"IAC-{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
@@ -300,18 +288,16 @@ def render_admin_dashboard():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
-# --- DASHBOARD CLIENTE (ACTUALIZADO: FIX RENDERIZADO BARRA DUAL) ---
+# --- DASHBOARD CLIENTE (CORREGIDO) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
     
-    # Filtrar paquetes del usuario
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == str(u.get('correo', '')).lower()]
     
     if not mis_p: 
         st.info("Sin envíos activos en este momento.")
     else:
-        # 1. Buscador para que el cliente ubique su mercancía rápidamente
         busq_c = st.text_input("🔍 Buscar paquete por ID:", key="search_client_pkg")
         if busq_c:
             mis_p = [p for p in mis_p if busq_c.lower() in str(p.get('ID_Barra', '')).lower()]
@@ -326,46 +312,17 @@ def render_client_dashboard():
                     abo = float(p.get('Abonado', 0.0))
                     resta = tot - abo
                     icon = obtener_icono_transporte(p.get('Tipo_Traslado'))
-                    
-                    # Cálculo de porcentajes
                     perc_pagado = (abo / tot * 100) if tot > 0 else 0
                     perc_deuda = 100 - perc_pagado
                     
-                    # Usamos .format() para evitar el conflicto de llaves del CSS con Python
-                    card_html = """
-                    <div class="p-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color:#60a5fa; font-weight:800; font-size: 20px;">{icon} #{id_barra}</span>
-                            <span style="background:rgba(96,165,250,0.2); padding: 4px 10px; border-radius:10px; font-size:12px;">{estado}</span>
-                        </div>
-                        <div style="margin-top: 15px;">
-                            <small style="opacity:0.7;">Total a pagar</small>
-                            <div style="font-size: 22px; font-weight: 700;">${total:.2f}</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px;">
-                            <span>Pagado: <b style="color:#4ade80;">${abonado:.2f}</b></span>
-                            <span>Pendiente: <b style="color:#f87171;">${pendiente:.2f}</b></span>
-                        </div>
-                        
-                        <div style="width: 100%; background-color: #ef4444; height: 12px; border-radius: 6px; margin-top: 15px; display: flex; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="width: {p_pagado}%; background-color: #22c55e; height: 100%;"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; opacity: 0.8;">
-                            <span>{p_pagado:.1f}% Completado</span>
-                            <span>{p_deuda:.1f}% Deuda</span>
-                        </div>
-                    </div>
-                    """.format(
-                        icon=icon, 
-                        id_barra=p["ID_Barra"], 
-                        estado=p["Estado"], 
-                        total=tot, 
-                        abonado=abo, 
-                        pendiente=resta, 
-                        p_pagado=perc_pagado, 
-                        p_deuda=perc_deuda
-                    )
-                    
+                    # El HTML se escribe sin sangrías internas para evitar que Streamlit lo interprete como código
+                    card_html = f"""<div class="p-card">
+<div style="display: flex; justify-content: space-between; align-items: center;"><span style="color:#60a5fa; font-weight:800; font-size: 20px;">{icon} #{p['ID_Barra']}</span><span style="background:rgba(96,165,250,0.2); padding: 4px 10px; border-radius:10px; font-size:12px;">{p['Estado']}</span></div>
+<div style="margin-top: 15px;"><small style="opacity:0.7;">Total a pagar</small><div style="font-size: 22px; font-weight: 700;">${tot:.2f}</div></div>
+<div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px;"><span>Pagado: <b style="color:#4ade80;">${abo:.2f}</b></span><span>Pendiente: <b style="color:#f87171;">${resta:.2f}</b></span></div>
+<div style="width: 100%; background-color: #ef4444; height: 12px; border-radius: 6px; margin-top: 15px; display: flex; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);"><div style="width: {perc_pagado}%; background-color: #22c55e; height: 100%;"></div></div>
+<div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; opacity: 0.8;"><span>{perc_pagado:.1f}% Completado</span><span>{perc_deuda:.1f}% Deuda</span></div>
+</div>"""
                     st.markdown(card_html, unsafe_allow_html=True)
 
 def render_header():
@@ -373,6 +330,7 @@ def render_header():
     with col_l: st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
     with col_n:
         with st.popover("🔔"):
+            if not st.session_state.notificaciones: st.write("No hay notificaciones.")
             for n in st.session_state.notificaciones: st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
     with col_s:
         if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
