@@ -300,7 +300,7 @@ def render_admin_dashboard():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                     st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
 
-# --- DASHBOARD CLIENTE (ACTUALIZADO: BUSCADOR + PROGRESO DUAL) ---
+# --- DASHBOARD CLIENTE (ACTUALIZADO: FIX RENDERIZADO BARRA DUAL) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -329,31 +329,44 @@ def render_client_dashboard():
                     
                     # Cálculo de porcentajes
                     perc_pagado = (abo / tot * 100) if tot > 0 else 0
+                    perc_deuda = 100 - perc_pagado
                     
-                    st.markdown(f"""
+                    # Usamos .format() para evitar el conflicto de llaves del CSS con Python
+                    card_html = """
                     <div class="p-card">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color:#60a5fa; font-weight:800; font-size: 20px;">{icon} #{p["ID_Barra"]}</span>
-                            <span style="background:rgba(96,165,250,0.2); padding: 4px 10px; border-radius:10px; font-size:12px;">{p["Estado"]}</span>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 20px;">{icon} #{id_barra}</span>
+                            <span style="background:rgba(96,165,250,0.2); padding: 4px 10px; border-radius:10px; font-size:12px;">{estado}</span>
                         </div>
                         <div style="margin-top: 15px;">
                             <small style="opacity:0.7;">Total a pagar</small>
-                            <div style="font-size: 22px; font-weight: 700;">${tot:.2f}</div>
+                            <div style="font-size: 22px; font-weight: 700;">${total:.2f}</div>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px;">
-                            <span>Pagado: <b style="color:#4ade80;">${abo:.2f}</b></span>
-                            <span>Pendiente: <b style="color:#f87171;">${resta:.2f}</b></span>
+                            <span>Pagado: <b style="color:#4ade80;">${abonado:.2f}</b></span>
+                            <span>Pendiente: <b style="color:#f87171;">${pendiente:.2f}</b></span>
                         </div>
                         
                         <div style="width: 100%; background-color: #ef4444; height: 12px; border-radius: 6px; margin-top: 15px; display: flex; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="width: {perc_pagado}%; background-color: #22c55e; height: 100%;"></div>
+                            <div style="width: {p_pagado}%; background-color: #22c55e; height: 100%;"></div>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; opacity: 0.8;">
-                            <span>{perc_pagado:.1f}% Completado</span>
-                            <span>{100-perc_pagado:.1f}% Deuda</span>
+                            <span>{p_pagado:.1f}% Completado</span>
+                            <span>{p_deuda:.1f}% Deuda</span>
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """.format(
+                        icon=icon, 
+                        id_barra=p["ID_Barra"], 
+                        estado=p["Estado"], 
+                        total=tot, 
+                        abonado=abo, 
+                        pendiente=resta, 
+                        p_pagado=perc_pagado, 
+                        p_deuda=perc_deuda
+                    )
+                    
+                    st.markdown(card_html, unsafe_allow_html=True)
 
 def render_header():
     col_l, col_n, col_s = st.columns([7, 1, 2])
