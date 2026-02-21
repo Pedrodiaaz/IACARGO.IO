@@ -69,7 +69,7 @@ st.markdown("""
         color: #1e293b !important;
     }
 
-    /* BOTONES PRIMARIOS: Fondo azul, letras blancas */
+    /* BOTONES PRIMARIOS */
     .stButton > button {
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
@@ -108,7 +108,7 @@ st.markdown("""
         100% { transform: scale(1); opacity: 0.9; }
     }
 
-    /* --- AJUSTE PARA EXPANDERS (COBROS) --- */
+    /* --- AJUSTE UNIFICADO PARA EXPANDERS (ESTÁTICO) --- */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px);
@@ -119,22 +119,25 @@ st.markdown("""
         color: white !important;
     }
 
-    [data-testid="stExpanderDetails"] {
-        background-color: transparent !important;
-        color: white !important;
-    }
-    
-    /* CAMBIO SOLICITADO: Mantener color estático en el encabezado del expander */
+    /* Forzar que el encabezado no cambie de color al abrirse o enfocarse */
     [data-testid="stExpander"] summary {
+        background-color: transparent !important;
         color: white !important;
     }
 
     [data-testid="stExpander"] summary:hover, 
     [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary:active,
     [data-testid="stExpander"] summary[aria-expanded="true"] {
         background-color: rgba(255, 255, 255, 0.1) !important;
         color: white !important;
+        outline: none !important;
         border-radius: 15px;
+    }
+
+    [data-testid="stExpanderDetails"] {
+        background-color: transparent !important;
+        color: white !important;
     }
 
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
@@ -182,7 +185,7 @@ def obtener_icono_transporte(tipo):
     iconos = {"Aéreo": "✈️", "Marítimo": "🚢", "Envio Nacional": "🚚"}
     return iconos.get(tipo, "📦")
 
-# --- Inicialización de Session State ---
+# --- Session State ---
 if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
 if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
 if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
@@ -237,6 +240,7 @@ def render_admin_dashboard():
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
+            # El expander ahora mantendrá su color por el CSS arriba
             with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
                 m_abono = st.number_input("Monto:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
@@ -327,7 +331,7 @@ def render_header():
         if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
             st.session_state.usuario_identificado = None; st.session_state.landing_vista = True; st.rerun()
 
-# --- LÓGICA DE LOGIN ---
+# --- LOGIN ---
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
         col1, col2, col3 = st.columns([1, 2, 1])
