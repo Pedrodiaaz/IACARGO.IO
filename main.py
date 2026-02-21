@@ -9,6 +9,10 @@ from datetime import datetime
 # --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL ---
 st.set_page_config(page_title="IACargo.io | Evolution System", layout="wide", page_icon="📦")
 
+# --- TARIFAS ACTUALIZADAS (Cambio solicitado) ---
+TARIFA_AEREO_KG = 6.0    # $6 por Kilogramo
+TARIFA_MARITIMO_FT3 = 15.0  # $15 por Pie Cúbico
+
 st.markdown("""
     <style>
     /* Fondo Global */
@@ -39,7 +43,7 @@ st.markdown("""
         z-index: 10;
     }
 
-    /* --- CAMBIO SOLICITADO: FONDO BLANCO PARA NOTIFICACIONES --- */
+    /* --- FONDO BLANCO PARA NOTIFICACIONES --- */
     div[data-testid="stPopoverContent"] {
         background-color: #ffffff !important;
         border: 1px solid rgba(0,0,0,0.1) !important;
@@ -48,7 +52,6 @@ st.markdown("""
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
     }
 
-    /* Letras Negras/Oscuras dentro del popover para contraste */
     div[data-testid="stPopoverContent"] p, 
     div[data-testid="stPopoverContent"] small, 
     div[data-testid="stPopoverContent"] span,
@@ -56,10 +59,9 @@ st.markdown("""
         color: #1e293b !important;
     }
 
-    /* Estilo para cada item de notificación individual */
     .notif-item {
-        background: #f1f5f9; /* Fondo gris muy claro para cada item */
-        border-left: 4px solid #2563eb; /* Línea azul lateral */
+        background: #f1f5f9;
+        border-left: 4px solid #2563eb;
         padding: 10px;
         margin-bottom: 8px;
         border-radius: 8px;
@@ -67,7 +69,6 @@ st.markdown("""
         color: #1e293b !important;
     }
 
-    /* Botones de Acción */
     .stButton > button {
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
@@ -134,7 +135,15 @@ st.markdown("""
 ARCHIVO_DB = "inventario_logistica.csv"
 ARCHIVO_USUARIOS = "usuarios_iacargo.csv"
 ARCHIVO_PAPELERA = "papelera_iacargo.csv"
-PRECIO_POR_UNIDAD = 5.0
+
+# Función de cálculo dinámica según tipo de envío
+def calcular_monto(valor, tipo):
+    if tipo == "Aéreo":
+        return valor * TARIFA_AEREO_KG
+    elif tipo == "Marítimo":
+        return valor * TARIFA_MARITIMO_FT3
+    else:
+        return valor * 5.0 # Tarifa base nacional por defecto
 
 if 'notificaciones' not in st.session_state: st.session_state.notificaciones = []
 
@@ -177,7 +186,10 @@ def render_admin_dashboard():
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], key="admin_reg_tra")
-        label_din = "Pies Cúbicos" if f_tra == "Marítimo" else "Peso (Kg / Lbs)"
+        
+        # Etiqueta dinámica según tu instrucción (Aéreo=Peso, Marítimo=Pies)
+        label_din = "Pies Cúbicos (ft³)" if f_tra == "Marítimo" else "Peso (Kilogramos)"
+        
         with st.form("reg_form", clear_on_submit=True):
             st.info(f"ID sugerido: **{st.session_state.id_actual}**")
             f_id = st.text_input("ID Tracking / Guía", value=st.session_state.id_actual)
@@ -188,11 +200,18 @@ def render_admin_dashboard():
             
             if st.form_submit_button("REGISTRAR EN SISTEMA", type="primary", use_container_width=True):
                 if f_id and f_cli and f_cor:
-                    nuevo = {"ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, "Monto_USD": f_pes * PRECIO_POR_UNIDAD, "Estado": "RECIBIDO ALMACEN PRINCIPAL", "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, "Abonado": 0.0, "Fecha_Registro": datetime.now()}
+                    monto_calculado = calcular_monto(f_pes, f_tra)
+                    nuevo = {
+                        "ID_Barra": f_id, "Cliente": f_cli, "Correo": f_cor.lower().strip(), 
+                        "Peso_Mensajero": f_pes, "Peso_Almacen": 0.0, "Validado": False, 
+                        "Monto_USD": monto_calculado, "Estado": "RECIBIDO ALMACEN PRINCIPAL", 
+                        "Pago": "PENDIENTE", "Modalidad": f_mod, "Tipo_Traslado": f_tra, 
+                        "Abonado": 0.0, "Fecha_Registro": datetime.now()
+                    }
                     st.session_state.inventario.append(nuevo)
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     st.session_state.id_actual = generar_id_unico()
-                    agregar_notificacion(f"Nuevo registro: {f_id} para {f_cli}")
+                    agregar_notificacion(f"Nuevo registro: {f_id} para {f_cli} (${monto_calculado})")
                     st.success(f"Guía {f_id} registrada."); st.rerun()
 
     with t_val:
@@ -201,14 +220,17 @@ def render_admin_dashboard():
         if pendientes:
             guia_v = st.selectbox("Seleccione Guía para validar:", [p["ID_Barra"] for p in pendientes])
             paq = next(p for p in pendientes if p["ID_Barra"] == guia_v)
-            st.info(f"Reportado por mensajero: {paq['Peso_Mensajero']}")
-            peso_real = st.number_input(f"Peso Real en Almacén", min_value=0.0, value=float(paq['Peso_Mensajero']))
+            label_val = "Pies Cúbicos Reales" if paq['Tipo_Traslado'] == "Marítimo" else "Peso Real (Kg)"
+            
+            st.info(f"Reportado inicialmente: {paq['Peso_Mensajero']}")
+            valor_real = st.number_input(label_val, min_value=0.0, value=float(paq['Peso_Mensajero']))
+            
             if st.button("CONFIRMAR Y VALIDAR", type="primary"):
-                paq['Peso_Almacen'] = peso_real
+                paq['Peso_Almacen'] = valor_real
                 paq['Validado'] = True
-                paq['Monto_USD'] = peso_real * PRECIO_POR_UNIDAD
+                paq['Monto_USD'] = calcular_monto(valor_real, paq['Tipo_Traslado'])
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                agregar_notificacion(f"Validación exitosa: {guia_v} con {peso_real} unidades.")
+                agregar_notificacion(f"Validación exitosa: {guia_v} actualizada.")
                 st.success("Validado correctamente."); st.rerun()
         else: st.info("No hay paquetes por validar.")
 
@@ -217,7 +239,7 @@ def render_admin_dashboard():
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
-            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
+            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Total: ${total:.2f} | Faltan: ${rest:.2f})"):
                 m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p['Abonado'] = abo + m_abono
@@ -267,13 +289,13 @@ def render_admin_dashboard():
                 
                 c1, c2, c3 = st.columns(3)
                 n_cli = c1.text_input("Cliente", value=paq_ed['Cliente'], key=f"nc_{paq_ed['ID_Barra']}")
-                n_pes = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
+                n_val = c2.number_input("Peso/Pies", value=float(paq_ed['Peso_Almacen']), key=f"np_{paq_ed['ID_Barra']}")
                 n_tra = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=["Aéreo", "Marítimo", "Envio Nacional"].index(paq_ed.get('Tipo_Traslado', 'Aéreo')), key=f"nt_{paq_ed['ID_Barra']}")
                 
                 btn_col1, btn_col2 = st.columns([1, 1])
                 with btn_col1:
                     if st.button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
-                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_pes, 'Tipo_Traslado': n_tra, 'Monto_USD': n_pes * PRECIO_POR_UNIDAD})
+                        paq_ed.update({'Cliente': n_cli, 'Peso_Almacen': n_val, 'Tipo_Traslado': n_tra, 'Monto_USD': calcular_monto(n_val, n_tra)})
                         guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                         agregar_notificacion(f"Cambios manuales en guía: {guia_ed}")
                         st.success("Cambios guardados"); st.rerun()
