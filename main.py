@@ -108,6 +108,7 @@ st.markdown("""
     }
 
     /* --- AJUSTE SOLICITADO PARA EXPANDERS (COBROS) --- */
+    /* Mantenemos el estilo visual igual antes y después de desplegar */
     .stTabs, .stForm, [data-testid="stExpander"], .p-card {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px);
@@ -118,15 +119,15 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Asegurar que el contenido interno del expander no cambie a blanco */
+    /* Forzamos que el interior del expander no use fondos blancos ni letras oscuras */
     [data-testid="stExpanderDetails"] {
         background-color: transparent !important;
         color: white !important;
     }
     
-    /* Forzar texto blanco en etiquetas dentro del expander */
-    [data-testid="stExpander"] label, [data-testid="stExpander"] p {
-        color: #ffffff !important;
+    [data-testid="stExpander"] summary:hover {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 15px;
     }
 
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
@@ -322,7 +323,6 @@ def render_client_dashboard():
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
                 tot = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = tot - abo
-                porc = (abo / tot * 100) if tot > 0 else 0
                 st.markdown(f'<div class="p-card"><span style="color:#60a5fa; font-weight:800;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span><br><b>Estado:</b> {p["Estado"]}<br><b>Faltan:</b> ${rest:.2f}</div>', unsafe_allow_html=True)
                 st.progress(abo/tot if tot > 0 else 0)
 
