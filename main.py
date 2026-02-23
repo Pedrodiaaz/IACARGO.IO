@@ -28,16 +28,34 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
-    /* FIX: Mantener color permanente en Expanders (incluso abiertos/seleccionados) */
+    /* FIX: Mantener color permanente en Expanders y anular efectos de interacción en títulos */
     [data-testid="stExpander"] {
         background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
+    
+    /* Anular cambio de color y fondo en el título (summary) al interactuar */
+    [data-testid="stExpander"] summary {
+        background-color: transparent !important;
+        color: #ffffff !important; /* Mantiene el blanco original */
+    }
+    
+    [data-testid="stExpander"] summary:hover, 
+    [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary:active {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        outline: none !important;
+    }
+
+    /* Quitar la línea de enfoque que pone Streamlit por defecto */
+    [data-testid="stExpander"] summary:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
     [data-testid="stExpanderDetails"] {
         background-color: transparent !important;
-    }
-    summary:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 15px;
     }
 
     /* Botones de Identidad IACargo (Azul Vibrante) */
