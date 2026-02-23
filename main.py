@@ -23,22 +23,22 @@ st.markdown("""
         background-color: #ef4444; border-radius: 50%; border: 2px solid #0f172a; z-index: 10;
     }
 
+    /* POPUPS Y NOTIFICACIONES */
     div[data-testid="stPopoverContent"] {
         background-color: #ffffff !important; border: 1px solid rgba(0,0,0,0.1) !important;
         border-radius: 15px !important; padding: 10px !important;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
     }
-
     div[data-testid="stPopoverContent"] p, div[data-testid="stPopoverContent"] small, 
     div[data-testid="stPopoverContent"] span, div[data-testid="stPopoverContent"] b {
         color: #1e293b !important;
     }
-
     .notif-item {
         background: #f1f5f9; border-left: 4px solid #2563eb;
         padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 0.9em; color: #1e293b !important;
     }
 
+    /* BOTONES PRIMARIOS (EVOLUTION STYLE) */
     .stButton > button { border-radius: 12px !important; transition: all 0.3s ease !important; }
     div.stButton > button[kind="primary"], .stForm div.stButton > button {
         background-color: #2563eb !important; color: white !important;
@@ -46,12 +46,12 @@ st.markdown("""
         width: 100% !important; padding: 10px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3) !important;
     }
-    
     div.stButton > button[kind="primary"]:hover, .stForm div.stButton > button:hover {
         background-color: #3b82f6 !important; transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
     }
 
+    /* LOGO Y TEXTOS */
     .logo-animado {
         font-style: italic !important; font-family: 'Georgia', serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa);
@@ -60,13 +60,40 @@ st.markdown("""
         margin-bottom: 5px;
     }
     @keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
+    .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
+    h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
 
-    .stTabs, .stForm, [data-testid="stExpander"] {
+    /* CONTENEDORES, TABS Y FORMULARIOS */
+    .stTabs, .stForm {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px !important; padding: 20px; margin-bottom: 15px; color: white !important;
     }
 
+    /* --- MEJORA DE EXPANDERS (COBROS Y RESUMEN) --- */
+    div[data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 15px !important;
+        margin-bottom: 10px !important;
+    }
+    /* Estilo del encabezado del expander (Cerrado y Abierto) */
+    details[data-testid="stExpander"] summary {
+        background-color: transparent !important;
+        color: #60a5fa !important;
+        font-weight: 700 !important;
+        padding: 10px !important;
+        border-radius: 15px !important;
+    }
+    details[data-testid="stExpander"] summary:hover { color: #a78bfa !important; }
+    /* Contenido interno del expander */
+    details[data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+        background-color: transparent !important;
+        padding: 10px !important;
+    }
+
+    /* CARDS DE CLIENTE */
     .p-card {
         background: rgba(255, 255, 255, 0.07) !important;
         backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15);
@@ -74,13 +101,11 @@ st.markdown("""
     }
     .p-card:hover { transform: translateY(-5px); border-color: #60a5fa; }
 
+    /* INPUTS */
     div[data-baseweb="input"] { border-radius: 10px !important; background-color: #f8fafc !important; }
     div[data-baseweb="input"] input { color: #000000 !important; font-weight: 500 !important; }
     
-    .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
-    .welcome-text { background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 38px; margin-bottom: 10px; }
-    
-    h1, h2, h3, p, span, label, .stMarkdown { color: #e2e8f0 !important; }
+    .resumen-row { background-color: #ffffff !important; color: #1e293b !important; padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-radius: 8px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -167,11 +192,17 @@ def render_admin_dashboard():
 
     with t_cob:
         st.subheader(" Gestión de Cobros")
+        busq_cobro = st.text_input("🔍 Buscar paquete o cliente:", key="search_cobros")
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
+        
+        if busq_cobro:
+            pendientes_p = [p for p in pendientes_p if busq_cobro.lower() in p['ID_Barra'].lower() or busq_cobro.lower() in p['Cliente'].lower()]
+
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
+            # El expander ahora usa el CSS unificado definido arriba
             with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
-                m_abono = st.number_input("Monto:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
+                m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p['Abonado'] = abo + m_abono
                     if (total - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
