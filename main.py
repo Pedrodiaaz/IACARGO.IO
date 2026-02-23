@@ -28,16 +28,22 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
+    /* Títulos de los campos (Labels) en Blanco */
+    [data-testid="stWidgetLabel"] p {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+
     /* FIX: Mantener color permanente en Expanders y anular efectos de interacción en títulos */
     [data-testid="stExpander"] {
         background-color: rgba(255, 255, 255, 0.03) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
-    /* Anular cambio de color y fondo en el título (summary) al interactuar */
     [data-testid="stExpander"] summary {
         background-color: transparent !important;
-        color: #ffffff !important; /* Mantiene el blanco original */
+        color: #ffffff !important;
     }
     
     [data-testid="stExpander"] summary:hover, 
@@ -48,7 +54,6 @@ st.markdown("""
         outline: none !important;
     }
 
-    /* Quitar la línea de enfoque que pone Streamlit por defecto */
     [data-testid="stExpander"] summary:focus-visible {
         outline: none !important;
         box-shadow: none !important;
@@ -78,7 +83,7 @@ st.markdown("""
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
     }
 
-    /* Inputs Estilizados */
+    /* Inputs Estilizados - El texto interno sigue siendo oscuro para contraste */
     div[data-baseweb="input"] { 
         border-radius: 12px !important; 
         background-color: rgba(255, 255, 255, 0.9) !important; 
@@ -276,7 +281,6 @@ def render_admin_dashboard():
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # --- TAB RESUMEN (CON BOTÓN DE REPORTE) ---
     with t_res:
         st.subheader("📋 Resumen Logístico")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
