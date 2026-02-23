@@ -18,7 +18,6 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
     
     /* --- AJUSTE DE EXPANDERS FIJOS --- */
-    /* Forzamos que el fondo no cambie al abrirse o hacer hover */
     .stDetails, [data-testid="stExpander"] {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px); 
@@ -29,10 +28,9 @@ st.markdown("""
         color: white !important;
     }
     
-    /* Quitar el cambio de color al pasar el mouse o expandir */
     [data-testid="stExpander"] summary:hover {
         background: transparent !important;
-        color: #60a5fa !important; /* Solo cambia el texto ligeramente para feedback */
+        color: #60a5fa !important;
     }
     
     [data-testid="stExpander"] summary {
@@ -62,16 +60,29 @@ st.markdown("""
         padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 0.9em; color: #1e293b !important;
     }
 
-    .stButton > button { border-radius: 12px !important; transition: all 0.3s ease !important; }
-    div.stButton > button[kind="primary"], .stForm div.stButton > button {
-        background-color: #2563eb !important; color: white !important;
-        border: none !important; font-weight: bold !important;
-        width: 100% !important; padding: 10px 20px !important;
+    /* --- ESTILO DE BOTONES (PRIMARIOS Y REPORTES) --- */
+    .stButton > button, .stDownloadButton > button { 
+        border-radius: 12px !important; 
+        transition: all 0.3s ease !important; 
+    }
+
+    div.stButton > button[kind="primary"], 
+    .stForm div.stButton > button,
+    div.stDownloadButton > button {
+        background-color: #2563eb !important; 
+        color: white !important;
+        border: none !important; 
+        font-weight: bold !important;
+        width: 100% !important; 
+        padding: 10px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3) !important;
     }
     
-    div.stButton > button[kind="primary"]:hover, .stForm div.stButton > button:hover {
-        background-color: #3b82f6 !important; transform: translateY(-2px) !important;
+    div.stButton > button[kind="primary"]:hover, 
+    .stForm div.stButton > button:hover,
+    div.stDownloadButton > button:hover {
+        background-color: #3b82f6 !important; 
+        transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
     }
 
