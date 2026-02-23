@@ -105,7 +105,6 @@ def cargar_datos(archivo):
         try:
             df = pd.read_csv(archivo)
             if 'Fecha_Registro' in df.columns: df['Fecha_Registro'] = pd.to_datetime(df['Fecha_Registro'])
-            # Mantenemos el historial si existe
             if 'Historial_Pagos' in df.columns:
                 df['Historial_Pagos'] = df['Historial_Pagos'].apply(lambda x: eval(x) if isinstance(x, str) else [])
             return df.to_dict('records')
@@ -170,20 +169,19 @@ def render_admin_dashboard():
 
     with t_cob:
         col_t, col_exp = st.columns([3, 1])
-        with col_t: st.subheader(" Gestión de Cobros")
+        with col_t: st.subheader("💰 Gestión de Cobros")
         
-        # --- NUEVO: Botón de Exportación integrado sin dañar visuales ---
+        # --- Lógica de Exportación Corregida ---
         hist_p = []
         for p in st.session_state.inventario:
             for h in p.get('Historial_Pagos', []):
-                hist_p.append({"Fecha": h['fecha'], "Guía": p['ID_Barra'], "Cliente": p['Cliente'], "Monto": h['monto']})
+                hist_p.append({"Fecha": h['fecha'], "Guía": p['ID_Barra'], "Cliente": p['Cliente'], "Monto": f"$ {h['monto']:.2f}"})
         
         if hist_p:
             df_h = pd.DataFrame(hist_p)
             with col_exp:
-                st.download_button("📊 EXPORTAR PAGOS", data=df_h.to_csv(index=False).encode('utf-8'), file_name="iac_pagos.csv", mime="text/csv")
+                st.download_button("📊 EXPORTAR PAGOS", data=df_h.to_csv(index=False).encode('utf-8'), file_name="historial_pagos_iac.csv", mime="text/csv", use_container_width=True)
 
-        # Buscador que ya tenías
         busq_cobro = st.text_input("🔍 Buscar paquete o cobro:", key="search_cobros_admin")
         
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
@@ -193,9 +191,8 @@ def render_admin_dashboard():
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
             with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
-                m_abono = st.number_input("Monto:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
+                m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
-                    # Guardamos el historial
                     p.setdefault('Historial_Pagos', []).append({"fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), "monto": m_abono})
                     p['Abonado'] = abo + m_abono
                     if (total - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
