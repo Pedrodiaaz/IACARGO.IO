@@ -28,6 +28,7 @@ st.markdown("""
         position: relative;
         display: inline-block;
         font-size: 26px;
+        cursor: pointer;
     }
     .bell-icon { color: #facc15; }
     
@@ -327,11 +328,27 @@ def render_client_dashboard():
 
 def render_header():
     col_l, col_n, col_s = st.columns([7, 1, 2])
-    with col_l: st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
+    with col_l: 
+        st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
+    
     with col_n:
-        with st.popover("🔔"):
-            if not st.session_state.notificaciones: st.write("No hay notificaciones.")
-            for n in st.session_state.notificaciones: st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
+        # --- Lógica dinámica para la campana de notificaciones ---
+        hay_notif = len(st.session_state.notificaciones) > 0
+        red_dot_html = '<div class="red-dot"></div>' if hay_notif else ""
+        
+        # Agrupamos la campana y el popover para que visualmente la campana sea el disparador
+        st.markdown(f'<div class="bell-container"><span class="bell-icon">🔔</span>{red_dot_html}</div>', unsafe_allow_html=True)
+        
+        with st.popover("Avisos"):
+            if not st.session_state.notificaciones:
+                st.write("No hay notificaciones.")
+            else:
+                for n in st.session_state.notificaciones:
+                    st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
+                if st.button("Limpiar Notificaciones", use_container_width=True):
+                    st.session_state.notificaciones = []
+                    st.rerun()
+
     with col_s:
         if st.button("CERRAR SESIÓN", type="primary", use_container_width=True):
             st.session_state.usuario_identificado = None; st.session_state.landing_vista = True; st.rerun()
