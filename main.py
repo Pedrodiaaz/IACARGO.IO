@@ -28,6 +28,18 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
+    /* FIX: Mantener color permanente en Expanders (incluso abiertos/seleccionados) */
+    [data-testid="stExpander"] {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+    [data-testid="stExpanderDetails"] {
+        background-color: transparent !important;
+    }
+    summary:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 15px;
+    }
+
     /* Botones de Identidad IACargo (Azul Vibrante) */
     div.stButton > button, .stForm div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
@@ -246,7 +258,7 @@ def render_admin_dashboard():
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # --- TAB RESUMEN (ACTUALIZADA CON BOTÓN DE REPORTE) ---
+    # --- TAB RESUMEN (CON BOTÓN DE REPORTE) ---
     with t_res:
         st.subheader("📋 Resumen Logístico")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
@@ -282,11 +294,8 @@ def render_admin_dashboard():
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
                                 st.info(f"""
                                 **ESTADO FINANCIERO: {r['ID_Barra']}**
-                                * **Cliente:** {r['Cliente']}
-                                * **Total:** ${float(r['Monto_USD']):.2f}
-                                * **Abonado:** ${float(r['Abonado']):.2f}
-                                * **Pendiente:** ${rest_p:.2f}
-                                * **Status:** {r['Pago']}
+                                * **Total:** ${float(r['Monto_USD']):.2f} | **Abonado:** ${float(r['Abonado']):.2f}
+                                * **Pendiente:** ${rest_p:.2f} | **Status:** {r['Pago']}
                                 """)
                         st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
                 else: st.write("Sin paquetes.")
