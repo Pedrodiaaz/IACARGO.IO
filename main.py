@@ -17,7 +17,6 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #1e3a8a 0%, #0f172a 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* --- AJUSTE DE EXPANDERS FIJOS --- */
     .stDetails, [data-testid="stExpander"] {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px); 
@@ -60,7 +59,6 @@ st.markdown("""
         padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 0.9em; color: #1e293b !important;
     }
 
-    /* --- ESTILO DE BOTONES (PRIMARIOS Y REPORTES) --- */
     .stButton > button, .stDownloadButton > button { 
         border-radius: 12px !important; 
         transition: all 0.3s ease !important; 
@@ -276,9 +274,19 @@ def render_admin_dashboard():
         if busq_box and not df_res.empty:
             df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_box, case=False)]
             
-        for est_k, est_l, _ in [("RECIBIDO ALMACEN PRINCIPAL", " EN ALMACÉN", "Alm"), ("EN TRANSITO", " EN TRÁNSITO", "Tra"), ("ENTREGADO", " ENTREGADO", "Ent")]:
-            df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
-            with st.expander(f"{est_l} ({len(df_f)})", expanded=True if busq_box else False):
+        # --- SECCIONES DE ESTADOS ACTUALIZADAS (4 ESTADOS) ---
+        estados_config = [
+            ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"),
+            ("EN TRANSITO", "✈️ EN TRÁNSITO"),
+            ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"),
+            ("ENTREGADO", "✅ ENTREGADO")
+        ]
+
+        for est_id, est_label in estados_config:
+            df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
+            with st.expander(f"{est_label} ({len(df_f)})", expanded=True if busq_box else False):
+                if df_f.empty:
+                    st.caption("No hay paquetes en este estado.")
                 for _, r in df_f.iterrows():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                     c_info, c_hist, c_exp = st.columns([3, 2, 1])
