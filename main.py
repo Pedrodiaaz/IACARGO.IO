@@ -17,6 +17,29 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #1e3a8a 0%, #0f172a 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
+    /* --- AJUSTE DE EXPANDERS FIJOS --- */
+    /* Forzamos que el fondo no cambie al abrirse o hacer hover */
+    .stDetails, [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(12px); 
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important; 
+        padding: 5px; 
+        margin-bottom: 15px; 
+        color: white !important;
+    }
+    
+    /* Quitar el cambio de color al pasar el mouse o expandir */
+    [data-testid="stExpander"] summary:hover {
+        background: transparent !important;
+        color: #60a5fa !important; /* Solo cambia el texto ligeramente para feedback */
+    }
+    
+    [data-testid="stExpander"] summary {
+        background: transparent !important;
+        border-radius: 20px !important;
+    }
+
     .bell-container { position: relative; display: inline-block; font-size: 26px; }
     .red-dot {
         position: absolute; top: -2px; right: -2px; height: 12px; width: 12px;
@@ -61,7 +84,7 @@ st.markdown("""
     }
     @keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
 
-    .stTabs, .stForm, [data-testid="stExpander"] {
+    .stTabs, .stForm {
         background: rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px !important; padding: 20px; margin-bottom: 15px; color: white !important;
@@ -176,8 +199,8 @@ def render_admin_dashboard():
 
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
-            with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
-                m_abono = st.number_input("Monto:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
+            with st.expander(f"💰 {p['ID_Barra']} — {p['Cliente']} (Debe: ${rest:.2f})"):
+                m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p.setdefault('Historial_Pagos', []).append({"fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), "monto": m_abono})
                     p['Abonado'] = abo + m_abono
@@ -247,26 +270,23 @@ def render_admin_dashboard():
             with st.expander(f"{est_l} ({len(df_f)})", expanded=True if busq_box else False):
                 for _, r in df_f.iterrows():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                    # Estructura del Resumen con Botón de Exportar Individual
                     c_info, c_hist, c_exp = st.columns([3, 2, 1])
                     with c_info:
                         st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div></div>', unsafe_allow_html=True)
                     with c_hist:
-                        # Mostramos brevemente los abonos
                         abonos = r.get('Historial_Pagos', [])
                         if abonos:
-                            txt_abono = f"Pagos: {len(abonos)} | Total: ${float(r['Abonado']):.2f}"
-                            st.caption(txt_abono)
+                            st.caption(f"Pagos: {len(abonos)} | Total: ${float(r['Abonado']):.2f}")
                         else:
                             st.caption("Sin pagos registrados.")
                     with c_exp:
-                        # Botón para descargar reporte de ESTE paquete
                         if abonos:
                             df_h_ind = pd.DataFrame(abonos)
                             df_h_ind['Guía'] = r['ID_Barra']
                             csv_ind = df_h_ind.to_csv(index=False).encode('utf-8')
                             st.download_button(label="📥 Reporte", data=csv_ind, file_name=f"Pagos_{r['ID_Barra']}.csv", mime="text/csv", key=f"dl_{r['ID_Barra']}", use_container_width=True)
 
+# --- LAS DEMÁS FUNCIONES PERMANECEN IGUAL ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
