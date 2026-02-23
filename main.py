@@ -168,22 +168,8 @@ def render_admin_dashboard():
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.success("Validado"); st.rerun()
 
     with t_cob:
-        col_t, col_exp = st.columns([3, 1])
-        with col_t: st.subheader("💰 Gestión de Cobros")
-        
-        # --- Lógica de Exportación Corregida ---
-        hist_p = []
-        for p in st.session_state.inventario:
-            for h in p.get('Historial_Pagos', []):
-                hist_p.append({"Fecha": h['fecha'], "Guía": p['ID_Barra'], "Cliente": p['Cliente'], "Monto": f"$ {h['monto']:.2f}"})
-        
-        if hist_p:
-            df_h = pd.DataFrame(hist_p)
-            with col_exp:
-                st.download_button("📊 EXPORTAR PAGOS", data=df_h.to_csv(index=False).encode('utf-8'), file_name="historial_pagos_iac.csv", mime="text/csv", use_container_width=True)
-
+        st.subheader(" Gestión de Cobros")
         busq_cobro = st.text_input("🔍 Buscar paquete o cobro:", key="search_cobros_admin")
-        
         pendientes_p = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE']
         if busq_cobro:
             pendientes_p = [p for p in pendientes_p if busq_cobro.lower() in p['ID_Barra'].lower() or busq_cobro.lower() in p['Cliente'].lower()]
@@ -191,7 +177,7 @@ def render_admin_dashboard():
         for p in pendientes_p:
             total = float(p.get('Monto_USD', 0.0)); abo = float(p.get('Abonado', 0.0)); rest = total - abo
             with st.expander(f"📦 {p['ID_Barra']} — {p['Cliente']} (Faltan: ${rest:.2f})"):
-                m_abono = st.number_input("Monto a abonar:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
+                m_abono = st.number_input("Monto:", 0.0, float(rest), float(rest), key=f"p_{p['ID_Barra']}")
                 if st.button(f"REGISTRAR PAGO", key=f"bp_{p['ID_Barra']}", type="primary"):
                     p.setdefault('Historial_Pagos', []).append({"fecha": datetime.now().strftime("%Y-%m-%d %H:%M"), "monto": m_abono})
                     p['Abonado'] = abo + m_abono
@@ -252,13 +238,34 @@ def render_admin_dashboard():
         st.subheader(" Resumen General")
         df_res = pd.DataFrame(st.session_state.inventario)
         busq_box = st.text_input(" Buscar caja por código:", key="res_search_admin")
-        if busq_box and not df_res.empty: df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_box, case=False)]
+        
+        if busq_box and not df_res.empty:
+            df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(busq_box, case=False)]
+            
         for est_k, est_l, _ in [("RECIBIDO ALMACEN PRINCIPAL", " EN ALMACÉN", "Alm"), ("EN TRANSITO", " EN TRÁNSITO", "Tra"), ("ENTREGADO", " ENTREGADO", "Ent")]:
             df_f = df_res[df_res['Estado'] == est_k] if not df_res.empty else pd.DataFrame()
-            with st.expander(f"{est_l} ({len(df_f)})", expanded=False):
+            with st.expander(f"{est_l} ({len(df_f)})", expanded=True if busq_box else False):
                 for _, r in df_f.iterrows():
                     icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                    st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div><div style="color:#475569; font-weight:700;">${float(r["Abonado"]):.2f}</div></div>', unsafe_allow_html=True)
+                    # Estructura del Resumen con Botón de Exportar Individual
+                    c_info, c_hist, c_exp = st.columns([3, 2, 1])
+                    with c_info:
+                        st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div style="color:#1e293b; flex-grow:1; margin-left:15px;">{r["Cliente"]}</div></div>', unsafe_allow_html=True)
+                    with c_hist:
+                        # Mostramos brevemente los abonos
+                        abonos = r.get('Historial_Pagos', [])
+                        if abonos:
+                            txt_abono = f"Pagos: {len(abonos)} | Total: ${float(r['Abonado']):.2f}"
+                            st.caption(txt_abono)
+                        else:
+                            st.caption("Sin pagos registrados.")
+                    with c_exp:
+                        # Botón para descargar reporte de ESTE paquete
+                        if abonos:
+                            df_h_ind = pd.DataFrame(abonos)
+                            df_h_ind['Guía'] = r['ID_Barra']
+                            csv_ind = df_h_ind.to_csv(index=False).encode('utf-8')
+                            st.download_button(label="📥 Reporte", data=csv_ind, file_name=f"Pagos_{r['ID_Barra']}.csv", mime="text/csv", key=f"dl_{r['ID_Barra']}", use_container_width=True)
 
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
