@@ -79,7 +79,7 @@ st.markdown("""
         color: #0f172a;
         padding: 12px 18px;
         border-radius: 12px;
-        margin-bottom: 8px;
+        margin-bottom: 0px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -142,7 +142,6 @@ def render_admin_dashboard():
     tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res = tabs
 
-    # --- TAB REGISTRO ---
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
@@ -165,7 +164,6 @@ def render_admin_dashboard():
                     st.session_state.id_actual = generar_id_unico()
                     st.rerun()
 
-    # --- TAB VALIDACIÓN ---
     with t_val:
         st.subheader("Validación de Carga")
         pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
@@ -180,7 +178,6 @@ def render_admin_dashboard():
                 paq['Monto_USD'] = calcular_monto(valor_real, paq['Tipo_Traslado'], paq.get('Reempaque', False))
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # --- TAB COBROS ---
     with t_cob:
         st.subheader("Gestión de Cobros")
         busq_cobro = st.text_input("🔍 Buscar por Cliente o ID:", key="sc")
@@ -196,7 +193,6 @@ def render_admin_dashboard():
                     if (float(p['Monto_USD']) - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # --- TAB ESTADOS ---
     with t_est:
         st.subheader("Actualizar Ubicación")
         if st.session_state.inventario:
@@ -208,11 +204,9 @@ def render_admin_dashboard():
                 registrar_notificacion(paq['Correo'], f"Tu paquete {paq['ID_Barra']} se encuentra en: {n_st}")
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # --- TAB AUDITORÍA / EDICIÓN (RECUPERADA) ---
     with t_aud:
         st.subheader("🕵️ Auditoría y Gestión")
         v_papelera = st.checkbox("📂 Ver Papelera de Reciclaje")
-        
         if v_papelera:
             if st.session_state.papelera:
                 g_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
@@ -230,33 +224,29 @@ def render_admin_dashboard():
                 df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False) | 
                                 df_aud['Cliente'].astype(str).str.contains(busq_aud, case=False)]
             st.dataframe(df_aud, use_container_width=True)
-            
             if st.session_state.inventario:
                 st.markdown("---")
                 st.subheader("📝 Editar Paquete")
                 g_ed = st.selectbox("Seleccionar ID para modificar:", [p["ID_Barra"] for p in st.session_state.inventario])
                 p_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == g_ed)
-                
                 c1, c2, c3 = st.columns(3)
                 n_c = c1.text_input("Nombre", value=p_ed['Cliente'])
                 n_v = c2.number_input("Valor (Peso/Dim)", value=float(p_ed['Peso_Almacen'] if p_ed['Validado'] else p_ed['Peso_Mensajero']))
                 n_t = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], 
                                    index=["Aéreo", "Marítimo", "Envio Nacional"].index(p_ed.get('Tipo_Traslado', 'Aéreo')))
-                
                 cb1, cb2 = st.columns(2)
                 if cb1.button("💾 GUARDAR CAMBIOS"):
                     p_ed.update({'Cliente': n_c, 'Tipo_Traslado': n_t, 'Monto_USD': calcular_monto(n_v, n_t, p_ed.get('Reempaque', False))})
                     if p_ed['Validado']: p_ed['Peso_Almacen'] = n_v
                     else: p_ed['Peso_Mensajero'] = n_v
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
-                
                 if cb2.button("🗑️ ELIMINAR"):
                     st.session_state.papelera.append(p_ed)
                     st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB)
                     guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # --- TAB RESUMEN (RECUPERADA) ---
+    # --- TAB RESUMEN (ACTUALIZADA CON BOTÓN DE REPORTE) ---
     with t_res:
         st.subheader("📋 Resumen Logístico")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
@@ -276,15 +266,29 @@ def render_admin_dashboard():
             with st.expander(f"{label} ({len(df_f)})", expanded=True if b_box else False):
                 if not df_f.empty:
                     for _, r in df_f.iterrows():
-                        icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                        badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                        st.markdown(f'''
-                            <div class="resumen-row">
-                                <div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div>
-                                <div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div>
-                                <div style="color:#64748b; font-size:12px;">{r["Tipo_Traslado"]}</div>
-                            </div>
-                        ''', unsafe_allow_html=True)
+                        col_info, col_btn = st.columns([4, 1])
+                        with col_info:
+                            icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
+                            badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                            st.markdown(f'''
+                                <div class="resumen-row">
+                                    <div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div>
+                                    <div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div>
+                                    <div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div>
+                                </div>
+                            ''', unsafe_allow_html=True)
+                        with col_btn:
+                            if st.button(f"VER REPORTE", key=f"rep_{r['ID_Barra']}"):
+                                rest_p = float(r['Monto_USD']) - float(r['Abonado'])
+                                st.info(f"""
+                                **ESTADO FINANCIERO: {r['ID_Barra']}**
+                                * **Cliente:** {r['Cliente']}
+                                * **Total:** ${float(r['Monto_USD']):.2f}
+                                * **Abonado:** ${float(r['Abonado']):.2f}
+                                * **Pendiente:** ${rest_p:.2f}
+                                * **Status:** {r['Pago']}
+                                """)
+                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
                 else: st.write("Sin paquetes.")
 
 # --- 4. DASHBOARD CLIENTE ---
@@ -292,13 +296,11 @@ def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u['correo'].lower()]
-    
     if not mis_p: st.info("Sin envíos activos.")
     else:
         busq_cli = st.text_input("🔍 Buscar paquete...", key="cli_s")
         if busq_cli:
             mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
-
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
