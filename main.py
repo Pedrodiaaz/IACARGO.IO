@@ -9,7 +9,7 @@ from datetime import datetime
 # --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL ---
 st.set_page_config(page_title="IACargo.io | Evolution System", layout="wide", page_icon="📦")
 
-TARIFA_AEREO_KG = 6.0    
+TARIFA_AEREO_KG = 6.0  
 TARIFA_MARITIMO_FT3 = 15.0  
 COSTO_REEMPAQUE_FIJO = 5.0 
 
@@ -19,7 +19,7 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* Contenedores de Cristal (Glassmorphism) */
+    /* Contenedores de Cristal */
     .stDetails, [data-testid="stExpander"], .stTabs, .stForm {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
@@ -43,14 +43,12 @@ st.markdown("""
         border-color: rgba(96, 165, 250, 0.4);
     }
 
-    /* Títulos de los campos (Labels) en Blanco */
     [data-testid="stWidgetLabel"] p {
         color: #ffffff !important;
         font-weight: 600 !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* Botones de Identidad IACargo */
+    /* Botones IACargo */
     div.stButton > button, .stForm div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
@@ -63,7 +61,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
     }
 
-    /* Inputs Estilizados */
+    /* Inputs */
     div[data-baseweb="input"] { 
         border-radius: 12px !important; 
         background-color: rgba(255, 255, 255, 0.9) !important; 
@@ -252,12 +250,11 @@ def render_admin_dashboard():
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                             badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div><div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div style="display:flex; align-items:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:10px;"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div></div>', unsafe_allow_html=True)
                         with col_btn:
                             if st.button(f"DETALLE", key=f"rep_{r['ID_Barra']}"):
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
                                 st.info(f"Guía {r['ID_Barra']}: Total ${float(r['Monto_USD']):.2f} | Pendiente: ${rest_p:.2f}")
-                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
     with t_ale:
         st.subheader("🚨 Centro de Alertas Críticas")
@@ -270,7 +267,6 @@ def render_admin_dashboard():
                     diff = abs(float(a['Peso_Mensajero']) - float(a['Peso_Almacen']))
                     with st.expander(f"⚠️ DISCREPANCIA: {a['ID_Barra']}", expanded=True):
                         st.error(f"Diferencia detectada de **{diff:.2f}**")
-                        st.write(f"Cliente: {a['Cliente']} | Mensajero: {a['Peso_Mensajero']} vs Almacén: {a['Peso_Almacen']}")
             else: st.success("No hay variaciones de peso.")
 
         with ca2:
@@ -282,10 +278,9 @@ def render_admin_dashboard():
                     dias = (hoy - pd.to_datetime(m['Fecha_Registro'])).days
                     with st.expander(f"🛑 MOROSO: {m['Cliente']}", expanded=True):
                         st.warning(f"Paquete {m['ID_Barra']} tiene **{dias} días** sin pago.")
-                        st.write(f"Deuda: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("No hay morosidad crítica.")
 
-# --- 4. DASHBOARD CLIENTE (CORREGIDO) ---
+# --- 4. DASHBOARD CLIENTE (CORREGIDO CON BARRA) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -304,59 +299,59 @@ def render_client_dashboard():
         
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
-                # Cálculos
+                # Cálculos de dinero y progreso
                 tot = float(p.get('Monto_USD', 0.0))
                 abo = float(p.get('Abonado', 0.0))
-                faltante = tot - abo
-                perc = (abo / tot * 100) if tot > 0 else 0
+                faltante = max(0, tot - abo)
+                perc = min(100, (abo / tot * 100)) if tot > 0 else 0
+                
                 fecha_reg = pd.to_datetime(p.get('Fecha_Registro', hoy))
                 dias_atraso = (hoy - fecha_reg).days
                 icono = obtener_icono_transporte(p.get('Tipo_Traslado'))
 
-                # Alerta de mora (solo si aplica)
+                # Alerta de mora
                 alerta_html = ""
                 if dias_atraso > 15 and p.get('Pago') != 'PAGADO':
                     alerta_html = f"""
-                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 10px; margin: 15px 0;">
+                    <div style="background: rgba(239, 68, 68, 0.15); border-left: 4px solid #f87171; border-radius: 8px; padding: 10px; margin: 15px 0;">
                         <div style="color: #f87171; font-size: 11px; font-weight: 800;">🔔 AVISO DE MOROSIDAD</div>
                         <div style="color: white; font-size: 10px;">{dias_atraso} días sin pago completo.</div>
                     </div>
                     """
 
-                # Renderizado por bloques para evitar errores de llaves
-                card_head = f"""
+                # Renderizado de Tarjeta con la Barra de Progreso Forzada
+                html_tarjeta = f"""
                 <div class="p-card">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
                             <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{icono} #{p['ID_Barra']}</span>
-                            <div style="color: #94a3b8; font-size: 11px; margin-top: 4px;">INGRESADO: {fecha_reg.strftime('%d/%m/%Y')}</div>
+                            <div style="color: #94a3b8; font-size: 11px; margin-top: 4px;">REGISTRO: {fecha_reg.strftime('%d/%m/%Y')}</div>
                         </div>
                         <span style="background:rgba(96,165,250,0.15); color:#60a5fa; border: 1px solid rgba(96,165,250,0.3); padding: 4px 12px; border-radius:20px; font-size:11px; font-weight:700;">
                             {p['Estado']}
                         </span>
                     </div>
+
                     <div style="margin-top: 20px;">
-                        <small style="color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">Total del Servicio</small>
+                        <small style="color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">Costo del Envío</small>
                         <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f} <span style="font-size: 14px; color: #64748b;">USD</span></div>
                     </div>
-                """
-                
-                card_progress = f"""
-                    <div style="margin-top: 20px;">
+
+                    {alerta_html}
+
+                    <div style="margin-top: 25px;">
                         <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                            <span style="color: #22c55e; font-weight: 600;">Pagado: ${abo:.2f}</span>
-                            <span style="color: #f87171; font-weight: 600;">Pendiente: ${faltante:.2f}</span>
+                            <span style="color: #4ade80; font-weight: 600;">Pagado: ${abo:.2f}</span>
+                            <span style="color: #f87171; font-weight: 600;">Resta: ${faltante:.2f}</span>
                         </div>
-                        <div style="width: 100%; background-color: rgba(239, 68, 68, 0.2); height: 10px; border-radius: 5px; overflow: hidden;">
-                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 5px;"></div>
+                        <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 6px; transition: width 0.5s ease;"></div>
                         </div>
-                        <div style="text-align: right; margin-top: 5px; font-size: 10px; color: #64748b;">{int(perc)}% completado</div>
+                        <div style="text-align: right; margin-top: 6px; font-size: 10px; color: #94a3b8; font-weight: 600;">{int(perc)}% COMPLETADO</div>
                     </div>
                 </div>
                 """
-                
-                # Unimos todo y lo mostramos
-                st.markdown(card_head + alerta_html + card_progress, unsafe_allow_html=True)
+                st.markdown(html_tarjeta, unsafe_allow_html=True)
 
 # --- 5. LOGICA ACCESO ---
 def render_header():
