@@ -15,79 +15,92 @@ COSTO_REEMPAQUE_FIJO = 5.0
 
 st.markdown("""
     <style>
-    /* Fondo y Base - Deep Space Gradient */
+    /* Fondo y Base */
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
     /* Contenedores de Cristal (Glassmorphism) */
     .stDetails, [data-testid="stExpander"], .stTabs, .stForm, .p-card {
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(16px); 
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px); 
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 24px !important; 
+        border-radius: 20px !important; 
         padding: 20px; margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
 
-    /* Títulos de los campos (Labels) */
+    /* Tarjetas de Paquete (Dashboard Cliente) */
+    .p-card {
+        transition: transform 0.3s ease;
+    }
+    .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
+
+    /* Títulos de los campos (Labels) en Blanco */
     [data-testid="stWidgetLabel"] p {
         color: #ffffff !important;
         font-weight: 600 !important;
-        letter-spacing: 0.5px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* Botones de Identidad IACargo (Azul Evolución) */
-    div.stButton > button {
+    /* FIX: Mantener color permanente en Expanders */
+    [data-testid="stExpander"] {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+    
+    [data-testid="stExpander"] summary {
+        color: #ffffff !important;
+    }
+
+    /* Botones de Identidad IACargo (Azul Vibrante) */
+    div.stButton > button, .stForm div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
-        border-radius: 14px !important; 
+        border-radius: 12px !important; 
         border: none !important;
         font-weight: 700 !important;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
-        padding: 12px 24px !important;
-        transition: all 0.3s ease !important;
+        width: 100% !important; 
+        padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+        transition: all 0.3s ease-in-out !important;
     }
     div.stButton > button:hover {
-        transform: scale(1.02) !important;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
     }
 
     /* Inputs Estilizados */
     div[data-baseweb="input"] { 
         border-radius: 12px !important; 
-        background-color: rgba(255, 255, 255, 0.95) !important; 
+        background-color: rgba(255, 255, 255, 0.9) !important; 
     }
     div[data-baseweb="input"] input { color: #0f172a !important; font-weight: 600 !important; }
 
-    /* Logo Animado e Identidad */
+    /* Logo Animado */
     .logo-animado {
-        font-family: 'Outfit', sans-serif;
+        font-style: italic !important; font-family: 'Georgia', serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite; font-weight: 900;
+        display: inline-block; animation: shine 3s linear infinite; font-weight: 800;
     }
     @keyframes shine { to { background-position: 200% center; } }
 
+    .resumen-row {
+        background: rgba(255, 255, 255, 0.95);
+        color: #0f172a; padding: 12px 18px; border-radius: 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 600 !important; }
+    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
+
     .welcome-text { 
-        font-size: 34px; font-weight: 800; 
-        background: linear-gradient(to right, #ffffff, #94a3b8);
+        font-size: 32px; font-weight: 800; 
+        background: linear-gradient(90deg, #ffffff, #94a3b8);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-
-    /* Estilo de Filas en Resumen Admin */
-    .resumen-row {
-        background: rgba(255, 255, 255, 0.05);
-        color: #ffffff; padding: 15px; border-radius: 15px;
-        display: flex; justify-content: space-between; align-items: center;
-        border: 1px solid rgba(255,255,255,0.1);
-        margin-bottom: 10px;
-    }
-
-    /* Pestañas (Tabs) */
-    button[data-baseweb="tab"] { color: #94a3b8 !important; }
-    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -95,6 +108,7 @@ st.markdown("""
 ARCHIVO_DB, ARCHIVO_USUARIOS, ARCHIVO_PAPELERA, ARCHIVO_NOTIF = "inventario_logistica.csv", "usuarios_iacargo.csv", "papelera_iacargo.csv", "notificaciones_iac.csv"
 
 def calcular_monto(valor, tipo, aplica_reempaque=False):
+    # Lógica de negocio: Aéreo por peso, Marítimo por dimensión
     monto = (valor * TARIFA_AEREO_KG) if tipo == "Aéreo" else (valor * TARIFA_MARITIMO_FT3) if tipo == "Marítimo" else (valor * 5.0)
     return monto + COSTO_REEMPAQUE_FIJO if aplica_reempaque else monto
 
@@ -120,10 +134,9 @@ def generar_id_unico(): return f"IAC-{''.join(random.choices(string.ascii_upperc
 def obtener_icono_transporte(tipo): return {"Aéreo": "✈️", "Marítimo": "🚢", "Envio Nacional": "🚚"}.get(tipo, "📦")
 
 # --- Session State ---
-if 'inventario' not in st.session_state: st.session_state.inventario = cargar_datos(ARCHIVO_DB)
-if 'papelera' not in st.session_state: st.session_state.papelera = cargar_datos(ARCHIVO_PAPELERA)
-if 'usuarios' not in st.session_state: st.session_state.usuarios = cargar_datos(ARCHIVO_USUARIOS)
-if 'notificaciones' not in st.session_state: st.session_state.notificaciones = cargar_datos(ARCHIVO_NOTIF)
+for key, file in [('inventario', ARCHIVO_DB), ('papelera', ARCHIVO_PAPELERA), ('usuarios', ARCHIVO_USUARIOS), ('notificaciones', ARCHIVO_NOTIF)]:
+    if key not in st.session_state: st.session_state[key] = cargar_datos(file)
+
 if 'usuario_identificado' not in st.session_state: st.session_state.usuario_identificado = None
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
@@ -138,6 +151,7 @@ def render_admin_dashboard():
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
+        # REGLA: Aéreo es peso, Marítimo es Dimensión
         label_din = "Pies Cúbicos (ft³)" if f_tra == "Marítimo" else "Peso (Kilogramos)"
         with st.form("reg_form"):
             col1, col2 = st.columns(2)
@@ -173,64 +187,123 @@ def render_admin_dashboard():
 
     with t_cob:
         st.subheader("Gestión de Cobros")
-        # Buscador solicitado para cobros
-        busq_cobro = st.text_input("🔍 Buscar por Cliente o ID para cobro:", placeholder="Ej: Juan Pérez o IAC-123", key="sc")
+        busq_cobro = st.text_input("🔍 Buscar paquete o cliente para cobrar:", key="sc")
         p_pago = [p for p in st.session_state.inventario if p['Pago'] != 'PAGADO']
         if busq_cobro:
             p_pago = [p for p in p_pago if busq_cobro.lower() in p['ID_Barra'].lower() or busq_cobro.lower() in p['Cliente'].lower()]
         
         for p in p_pago:
             rest = float(p['Monto_USD']) - float(p['Abonado'])
-            with st.expander(f"💵 {p['Cliente']} - {p['ID_Barra']} (Faltan: ${rest:.2f})"):
-                m_abono = st.number_input("Monto a Abonar:", 0.0, float(rest), float(rest), key=f"c_{p['ID_Barra']}")
-                if st.button("REGISTRAR ABONO", key=f"b_{p['ID_Barra']}"):
+            with st.expander(f"💵 {p['Cliente']} | {p['ID_Barra']} (Deuda: ${rest:.2f})"):
+                m_abono = st.number_input(f"Abonar a {p['ID_Barra']}:", 0.0, float(rest), float(rest), key=f"c_{p['ID_Barra']}")
+                if st.button("REGISTRAR PAGO", key=f"b_{p['ID_Barra']}"):
                     p['Abonado'] = float(p['Abonado']) + m_abono
                     if (float(p['Monto_USD']) - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
+    with t_est:
+        st.subheader("Actualizar Ubicación")
+        if st.session_state.inventario:
+            guia_est = st.selectbox("Seleccionar Guía:", [p["ID_Barra"] for p in st.session_state.inventario])
+            paq = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_est)
+            idx_st = ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"].index(paq['Estado']) if paq['Estado'] in ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"] else 0
+            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"], index=idx_st)
+            if st.button("ACTUALIZAR ESTATUS"):
+                paq["Estado"] = n_st
+                registrar_notificacion(paq['Correo'], f"Tu paquete {paq['ID_Barra']} está en: {n_st}")
+                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+
+    with t_aud:
+        st.subheader("🕵️ Auditoría y Gestión")
+        v_papelera = st.checkbox("📂 Ver Papelera de Reciclaje")
+        if v_papelera:
+            if st.session_state.papelera:
+                g_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
+                if st.button("♻️ RESTAURAR SELECCIONADO"):
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == g_res)
+                    st.session_state.inventario.append(paq_r)
+                    st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != g_res]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+            else: st.info("Papelera vacía.")
+        else:
+            busq_aud = st.text_input("🔍 Buscar en historial:", key="aud_s")
+            df_aud = pd.DataFrame(st.session_state.inventario)
+            if not df_aud.empty and busq_aud:
+                df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False) | df_aud['Cliente'].astype(str).str.contains(busq_aud, case=False)]
+            st.dataframe(df_aud, use_container_width=True)
+            
+            if st.session_state.inventario:
+                st.markdown("---")
+                st.subheader("📝 Editar Paquete Seleccionado")
+                g_ed = st.selectbox("ID para modificar:", [p["ID_Barra"] for p in st.session_state.inventario])
+                p_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == g_ed)
+                c1, c2, c3 = st.columns(3)
+                n_c = c1.text_input("Nombre Cliente", value=p_ed['Cliente'])
+                n_v = c2.number_input("Peso/Volumen", value=float(p_ed['Peso_Almacen'] if p_ed['Validado'] else p_ed['Peso_Mensajero']))
+                n_t = c3.selectbox("Tipo Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], index=["Aéreo", "Marítimo", "Envio Nacional"].index(p_ed.get('Tipo_Traslado', 'Aéreo')))
+                cb1, cb2 = st.columns(2)
+                if cb1.button("💾 GUARDAR CAMBIOS"):
+                    p_ed.update({'Cliente': n_c, 'Tipo_Traslado': n_t, 'Monto_USD': calcular_monto(n_v, n_t, p_ed.get('Reempaque', False))})
+                    if p_ed['Validado']: p_ed['Peso_Almacen'] = n_v
+                    else: p_ed['Peso_Mensajero'] = n_v
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+                if cb2.button("🗑️ ELIMINAR PAQUETE"):
+                    st.session_state.papelera.append(p_ed)
+                    st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
+                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
+
     with t_res:
-        st.subheader("📋 Resumen Logístico")
-        # Buscador solicitado para resumen de cajas
-        b_box = st.text_input("🔍 Localizar por Código de Caja:", placeholder="Escriba el ID para filtrar...", key="res_box_search")
+        st.subheader("📋 Resumen Logístico por Estados")
+        b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
         df_res = pd.DataFrame(st.session_state.inventario)
         if b_box and not df_res.empty:
             df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(b_box, case=False)]
         
-        config_est = [
-            ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), 
-            ("EN TRANSITO", "✈️ EN TRÁNSITO"), 
-            ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), 
-            ("ENTREGADO", "✅ ENTREGADO")
-        ]
+        config_est = [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), ("EN TRANSITO", "✈️ EN TRÁNSITO"), ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), ("ENTREGADO", "✅ ENTREGADO")]
         
         for est_id, label in config_est:
             df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
             with st.expander(f"{label} ({len(df_f)})", expanded=True if b_box else False):
                 if not df_f.empty:
                     for _, r in df_f.iterrows():
-                        col_info, col_btn = st.columns([5, 1])
+                        col_info, col_btn = st.columns([4, 1])
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                            badge_r = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'<div class="resumen-row"><div>{icon} <b>{r["ID_Barra"]}</b></div><div style="flex-grow:1; margin-left:20px;">{r["Cliente"]} {badge_r}</div><div><small>{r["Tipo_Traslado"]}</small></div></div>', unsafe_allow_html=True)
+                            badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div><div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
                         with col_btn:
-                            if st.button(f"INFO", key=f"rep_{r['ID_Barra']}"):
+                            if st.button(f"VER", key=f"rep_{r['ID_Barra']}"):
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
-                                st.info(f"Guía {r['ID_Barra']}: Total ${float(r['Monto_USD']):.2f} | Pendiente: ${rest_p:.2f}")
+                                st.info(f"ID: {r['ID_Barra']} | Total ${float(r['Monto_USD']):.2f} | Falta: ${rest_p:.2f}")
+                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
-    # Pestañas de Estados, Auditoría y Alertas mantenidas según lógica previa...
-    with t_est:
-        st.subheader("Actualizar Ubicación")
-        if st.session_state.inventario:
-            guia_est = st.selectbox("Seleccionar Guía:", [p["ID_Barra"] for p in st.session_state.inventario])
-            paq = next(p for p in st.session_state.inventario if p["ID_Barra"] == guia_est)
-            n_st = st.selectbox("Nuevo Estado:", ["RECIBIDO ALMACEN PRINCIPAL", "EN TRANSITO", "RECIBIDO EN ALMACEN DE DESTINO", "ENTREGADO"])
-            if st.button("ACTUALIZAR ESTATUS"):
-                paq["Estado"] = n_st
-                registrar_notificacion(paq['Correo'], f"Tu paquete {paq['ID_Barra']} está ahora en: {n_st}")
-                guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+    with t_ale:
+        st.subheader("🚨 Centro de Alertas Críticas")
+        ca1, ca2 = st.columns(2)
+        with ca1:
+            st.markdown("#### ⚖️ Variación de Peso/Volumen")
+            alertas_p = [p for p in st.session_state.inventario if p.get('Validado') and abs(float(p['Peso_Mensajero']) - float(p['Peso_Almacen'])) > 0.01]
+            if alertas_p:
+                for a in alertas_p:
+                    diff = abs(float(a['Peso_Mensajero']) - float(a['Peso_Almacen']))
+                    with st.expander(f"⚠️ DISCREPANCIA: {a['ID_Barra']}", expanded=True):
+                        st.error(f"Variación de **{diff:.2f}** detectada.")
+                        st.write(f"Mensajero: {a['Peso_Mensajero']} vs Almacén: {a['Peso_Almacen']}")
+            else: st.success("Todo validado correctamente.")
 
-# --- 4. DASHBOARD CLIENTE (VISTA EVOLUCIÓN CON BARRA) ---
+        with ca2:
+            st.markdown("#### ⏳ Morosidad (+15 días)")
+            hoy = datetime.now()
+            alertas_m = [p for p in st.session_state.inventario if p['Pago'] != 'PAGADO' and (hoy - pd.to_datetime(p['Fecha_Registro'])).days > 15]
+            if alertas_m:
+                for m in alertas_m:
+                    dias = (hoy - pd.to_datetime(m['Fecha_Registro'])).days
+                    with st.expander(f"🛑 CRÍTICO: {m['Cliente']}", expanded=True):
+                        st.warning(f"Paquete {m['ID_Barra']} lleva **{dias} días** pendiente.")
+                        st.write(f"Monto pendiente: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
+            else: st.success("Sin pagos atrasados.")
+
+# --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -239,49 +312,39 @@ def render_client_dashboard():
     if not mis_p: 
         st.info("No tienes envíos activos en este momento.")
     else:
-        busq_cli = st.text_input("🔍 Buscar mis paquetes:", placeholder="ID o Estatus...", key="cli_s")
-        if busq_cli: 
-            mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
-        
+        st.text_input("🔍 Buscar entre mis paquetes:", key="cli_s")
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
-                tot = float(p.get('Monto_USD', 0.0))
-                abo = float(p.get('Abonado', 0.0))
+                tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
                 perc = (abo / tot * 100) if tot > 0 else 0
-                icon = obtener_icono_transporte(p.get('Tipo_Traslado'))
+                # Color de la barra: Rojo si falta mucho, Verde si está casi listo
+                bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
                 
                 st.markdown(f"""
                 <div class="p-card">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{icon} #{p['ID_Barra']}</span>
-                        <span style="background:rgba(96,165,250,0.1); color:#60a5fa; padding: 4px 12px; border-radius:20px; font-size:11px; font-weight:700; border: 1px solid rgba(96,165,250,0.2);">
-                            {p['Estado']}
-                        </span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                        <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 6px 12px; border-radius:12px; font-size:12px; font-weight:bold;">{p["Estado"]}</span>
                     </div>
-                    
-                    <div style="margin-top: 15px;">
-                        <small style="color: #94a3b8; text-transform: uppercase; font-size: 10px; letter-spacing: 1px;">Inversión de Envío</small>
-                        <div style="font-size: 32px; font-weight: 800; color:white;">${tot:.2f} <small style="font-size: 14px; color: #94a3b8;">USD</small></div>
+                    <div style="margin-top: 20px;">
+                        <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
+                        <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f}</div>
                     </div>
-
-                    <div style="margin-top: 25px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                            <span style="color: #4ade80; font-weight: 600;">Abonado: ${abo:.2f}</span>
-                            <span style="color: #f87171; font-weight: 600;">Faltante: ${tot-abo:.2f}</span>
-                        </div>
-                        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 10px; border-radius: 10px; overflow: hidden;">
-                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 10px; box-shadow: 0 0 10px rgba(34,197,94,0.5);"></div>
-                        </div>
-                        <div style="text-align: right; margin-top: 6px; font-size: 11px; color: #94a3b8;">{int(perc)}% completado</div>
+                    <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 10px; border-radius: 5px; margin-top: 20px; overflow: hidden;">
+                        <div style="width: {perc}%; background: {bar_color}; height: 100%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; font-weight: 600;">
+                        <span style="color:#22c55e;">Abonado: ${abo:.2f}</span>
+                        <span style="color:#94a3b8;">Falta: ${tot-abo:.2f}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- 5. LOGICA ACCESO Y HEADER ---
+# --- 5. LOGICA ACCESO ---
 def render_header():
     col_l, col_n, col_s = st.columns([7, 1, 2])
-    with col_l: st.markdown('<div class="logo-animado" style="font-size:35px;">IACargo.io</div>', unsafe_allow_html=True)
+    with col_l: st.markdown('<div class="logo-animado" style="font-size:40px;">IACargo.io</div>', unsafe_allow_html=True)
     with col_n:
         u = st.session_state.usuario_identificado
         target = 'admin' if u['rol'] == 'admin' else u['correo']
@@ -289,26 +352,24 @@ def render_header():
         with st.popover("🔔"):
             if mías:
                 for n in mías[:5]: st.write(f"**{n['hora']}**: {n['msg']}")
-            else: st.write("Sin novedades.")
+            else: st.write("Sin avisos.")
     with col_s:
         if st.button("Cerrar Sesión"):
             st.session_state.usuario_identificado = None; st.session_state.landing_vista = True; st.rerun()
 
-# --- FLUJO PRINCIPAL ---
 if st.session_state.usuario_identificado is None:
     if st.session_state.landing_vista:
-        st.markdown('<div style="text-align:center; margin-top:100px;"><h1 class="logo-animado" style="font-size:90px;">IACargo.io</h1><p style="font-size:22px; opacity:0.8; letter-spacing: 2px;">"La existencia es un milagro"</p></div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("INICIAR EVOLUCIÓN", use_container_width=True): 
+        st.markdown('<div style="text-align:center; margin-top:100px;"><h1 class="logo-animado" style="font-size:100px;">IACargo.io</h1><p style="font-size:20px; opacity:0.8;">"La existencia es un milagro"</p></div>', unsafe_allow_html=True)
+        if st.button("INGRESAR AL SISTEMA", use_container_width=True): 
             st.session_state.landing_vista = False; st.rerun()
     else:
         c1, c2, c3 = st.columns([1, 1.5, 1])
         with c2:
-            st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:50px; margin-bottom:20px;">IACargo.io</div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="text-align:center;"><div class="logo-animado" style="font-size:60px;">IACargo.io</div></div>', unsafe_allow_html=True)
             t1, t2 = st.tabs(["🔐 Entrar", "📝 Registro"])
             with t1:
                 with st.form("login"):
-                    le, lp = st.text_input("Correo / Usuario"), st.text_input("Contraseña", type="password")
+                    le, lp = st.text_input("Usuario (Email)"), st.text_input("Clave", type="password")
                     if st.form_submit_button("ACCEDER"):
                         if le == "admin" and lp == "admin123": 
                             st.session_state.usuario_identificado = {"nombre": "Admin", "rol": "admin", "correo": "admin"}; st.rerun()
@@ -317,10 +378,11 @@ if st.session_state.usuario_identificado is None:
                         else: st.error("Credenciales incorrectas")
             with t2:
                 with st.form("signup"):
-                    n, e, p = st.text_input("Nombre Completo"), st.text_input("Correo Electrónico"), st.text_input("Crea tu Contraseña", type="password")
-                    if st.form_submit_button("CREAR MI CUENTA"):
-                        st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
-                        guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("¡Registro exitoso! Ya puedes entrar."); st.rerun()
+                    n, e, p = st.text_input("Nombre Completo"), st.text_input("Email"), st.text_input("Contraseña", type="password")
+                    if st.form_submit_button("CREAR CUENTA"):
+                        if n and e and p:
+                            st.session_state.usuarios.append({"nombre": n, "correo": e.lower().strip(), "password": hash_password(p), "rol": "cliente"})
+                            guardar_datos(st.session_state.usuarios, ARCHIVO_USUARIOS); st.success("¡Registrado!"); st.rerun()
 else:
     render_header()
     if st.session_state.usuario_identificado['rol'] == "admin": render_admin_dashboard()
