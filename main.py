@@ -19,7 +19,7 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* Contenedores de Cristal (Glassmorphism) */
+    /* Contenedores de Cristal */
     .stDetails, [data-testid="stExpander"], .stTabs, .stForm {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
@@ -28,68 +28,31 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
-    /* Títulos de los campos (Labels) en Blanco */
+    /* Labels en Blanco */
     [data-testid="stWidgetLabel"] p {
         color: #ffffff !important;
         font-weight: 600 !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* FIX: Mantener color permanente en Expanders y anular efectos de interacción en títulos */
-    [data-testid="stExpander"] {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    [data-testid="stExpander"] summary {
-        background-color: transparent !important;
-        color: #ffffff !important;
-    }
-    
-    [data-testid="stExpander"] summary:hover, 
-    [data-testid="stExpander"] summary:focus,
-    [data-testid="stExpander"] summary:active {
-        background-color: transparent !important;
-        color: #ffffff !important;
-        outline: none !important;
-    }
+    /* Fix Expanders */
+    [data-testid="stExpander"] summary { color: #ffffff !important; }
 
-    [data-testid="stExpander"] summary:focus-visible {
-        outline: none !important;
-        box-shadow: none !important;
-    }
-
-    [data-testid="stExpanderDetails"] {
-        background-color: transparent !important;
-    }
-
-    /* Botones de Identidad IACargo (Azul Vibrante) */
-    div.stButton > button, .stForm div.stButton > button {
+    /* Botones IACargo */
+    div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important; 
         border: none !important;
         font-weight: 700 !important;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
         width: 100% !important; 
         padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
-        transition: all 0.3s ease-in-out !important;
+        transition: 0.3s;
     }
-    div.stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-    }
+    div.stButton > button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important; }
 
-    /* Inputs Estilizados - El texto interno sigue siendo oscuro para contraste */
-    div[data-baseweb="input"] { 
-        border-radius: 12px !important; 
-        background-color: rgba(255, 255, 255, 0.9) !important; 
-        border: 2px solid transparent !important;
-    }
-    div[data-baseweb="input"]:focus-within { border-color: #60a5fa !important; }
+    /* Inputs */
+    div[data-baseweb="input"] { border-radius: 12px !important; background-color: rgba(255, 255, 255, 0.9) !important; }
     div[data-baseweb="input"] input { color: #0f172a !important; font-weight: 600 !important; }
 
     /* Logo Animado */
@@ -98,39 +61,17 @@ st.markdown("""
         background: linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        display: inline-block; animation: shine 3s linear infinite; font-weight: 800;
+        animation: shine 3s linear infinite; font-weight: 800;
     }
     @keyframes shine { to { background-position: 200% center; } }
 
-    /* Tarjetas y Filas del Resumen */
-    .p-card {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px !important; padding: 20px; margin-bottom: 15px;
-        transition: all 0.3s ease;
-    }
     .resumen-row {
         background: rgba(255, 255, 255, 0.95);
-        color: #0f172a;
-        padding: 12px 18px;
-        border-radius: 12px;
-        margin-bottom: 0px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        color: #0f172a; padding: 12px; border-radius: 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 8px;
     }
-    
-    /* Tabs Visual */
-    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 600 !important; }
-    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
-
-    /* Welcome Text */
-    .welcome-text { 
-        font-size: 32px; font-weight: 800; 
-        background: linear-gradient(90deg, #ffffff, #94a3b8);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
+    .welcome-text { font-size: 32px; font-weight: 800; color: white; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -174,8 +115,8 @@ if 'landing_vista' not in st.session_state: st.session_state.landing_vista = Tru
 
 def render_admin_dashboard():
     st.markdown('<div class="welcome-text">Consola de Control Logístico</div>', unsafe_allow_html=True)
-    tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
-    t_reg, t_val, t_cob, t_est, t_aud, t_res = tabs
+    tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "🔔 ALERTAS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN"])
+    t_reg, t_val, t_cob, t_ale, t_est, t_aud, t_res = tabs
 
     with t_reg:
         st.subheader("Registro de Entrada")
@@ -228,6 +169,36 @@ def render_admin_dashboard():
                     if (float(p['Monto_USD']) - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
+    with t_ale:
+        st.subheader("⚠️ Centro de Alertas Críticas")
+        
+        # 1. Alertas de Peso
+        incidencias_peso = [p for p in st.session_state.inventario if p.get('Validado') and abs(p['Peso_Mensajero'] - p['Peso_Almacen']) > 0.05]
+        with st.expander(f"⚖️ Discrepancia en el Peso ({len(incidencias_peso)})", expanded=True):
+            if incidencias_peso:
+                for p in incidencias_peso:
+                    diff = p['Peso_Almacen'] - p['Peso_Mensajero']
+                    st.markdown(f"**ID: {p['ID_Barra']}** | Origen: {p['Peso_Mensajero']} / Real: {p['Peso_Almacen']} | Dif: **{diff:.2f}**")
+                    if st.button(f"Sincronizar Peso {p['ID_Barra']}", key=f"sync_{p['ID_Barra']}"):
+                        p['Peso_Mensajero'] = p['Peso_Almacen']
+                        guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
+            else: st.success("Pesos validados correctamente.")
+
+        # 2. Alertas de Pagos Atrasados (+15 días)
+        hoy = datetime.now()
+        morosos = [p for p in st.session_state.inventario if p['Pago'] == 'PENDIENTE' and (hoy - pd.to_datetime(p['Fecha_Registro'])).days > 15]
+        
+        with st.expander(f"💰 Pagos Atrasados (+15 días) ({len(morosos)})"):
+            if morosos:
+                # Botón de exportar de regalo
+                df_mora = pd.DataFrame(morosos)[['ID_Barra', 'Cliente', 'Monto_USD', 'Abonado']]
+                st.download_button("📊 EXPORTAR REPORTE MORA", df_mora.to_csv(index=False), "reporte_mora.csv", "text/csv")
+                
+                for m in morosos:
+                    dias = (hoy - pd.to_datetime(m['Fecha_Registro'])).days
+                    st.error(f"⚠️ {m['Cliente']} | {m['ID_Barra']} | Hace {dias} días | Falta: ${float(m['Monto_USD'])-m['Abonado']:.2f}")
+            else: st.success("No hay pagos retrasados.")
+
     with t_est:
         st.subheader("Actualizar Ubicación")
         if st.session_state.inventario:
@@ -256,30 +227,8 @@ def render_admin_dashboard():
             busq_aud = st.text_input("🔍 Buscar en historial:", key="aud_s")
             df_aud = pd.DataFrame(st.session_state.inventario)
             if not df_aud.empty and busq_aud:
-                df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False) | 
-                                df_aud['Cliente'].astype(str).str.contains(busq_aud, case=False)]
+                df_aud = df_aud[df_aud['ID_Barra'].astype(str).str.contains(busq_aud, case=False) | df_aud['Cliente'].astype(str).str.contains(busq_aud, case=False)]
             st.dataframe(df_aud, use_container_width=True)
-            if st.session_state.inventario:
-                st.markdown("---")
-                st.subheader("📝 Editar Paquete")
-                g_ed = st.selectbox("Seleccionar ID para modificar:", [p["ID_Barra"] for p in st.session_state.inventario])
-                p_ed = next(p for p in st.session_state.inventario if p["ID_Barra"] == g_ed)
-                c1, c2, c3 = st.columns(3)
-                n_c = c1.text_input("Nombre", value=p_ed['Cliente'])
-                n_v = c2.number_input("Valor (Peso/Dim)", value=float(p_ed['Peso_Almacen'] if p_ed['Validado'] else p_ed['Peso_Mensajero']))
-                n_t = c3.selectbox("Traslado", ["Aéreo", "Marítimo", "Envio Nacional"], 
-                                   index=["Aéreo", "Marítimo", "Envio Nacional"].index(p_ed.get('Tipo_Traslado', 'Aéreo')))
-                cb1, cb2 = st.columns(2)
-                if cb1.button("💾 GUARDAR CAMBIOS"):
-                    p_ed.update({'Cliente': n_c, 'Tipo_Traslado': n_t, 'Monto_USD': calcular_monto(n_v, n_t, p_ed.get('Reempaque', False))})
-                    if p_ed['Validado']: p_ed['Peso_Almacen'] = n_v
-                    else: p_ed['Peso_Mensajero'] = n_v
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
-                if cb2.button("🗑️ ELIMINAR"):
-                    st.session_state.papelera.append(p_ed)
-                    st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
-                    guardar_datos(st.session_state.inventario, ARCHIVO_DB)
-                    guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
     with t_res:
         st.subheader("📋 Resumen Logístico")
@@ -288,12 +237,7 @@ def render_admin_dashboard():
         if b_box and not df_res.empty:
             df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(b_box, case=False)]
         
-        config_est = [
-            ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), 
-            ("EN TRANSITO", "✈️ EN TRÁNSITO"), 
-            ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), 
-            ("ENTREGADO", "✅ ENTREGADO")
-        ]
+        config_est = [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), ("EN TRANSITO", "✈️ EN TRÁNSITO"), ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), ("ENTREGADO", "✅ ENTREGADO")]
         
         for est_id, label in config_est:
             df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
@@ -303,24 +247,10 @@ def render_admin_dashboard():
                         col_info, col_btn = st.columns([4, 1])
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                            badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'''
-                                <div class="resumen-row">
-                                    <div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div>
-                                    <div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div>
-                                    <div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div>
-                                </div>
-                            ''', unsafe_allow_html=True)
+                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800;">{icon} {r["ID_Barra"]}</div><div><b>{r["Cliente"]}</b></div></div>', unsafe_allow_html=True)
                         with col_btn:
-                            if st.button(f"VER REPORTE", key=f"rep_{r['ID_Barra']}"):
-                                rest_p = float(r['Monto_USD']) - float(r['Abonado'])
-                                st.info(f"""
-                                **ESTADO FINANCIERO: {r['ID_Barra']}**
-                                * **Total:** ${float(r['Monto_USD']):.2f} | **Abonado:** ${float(r['Abonado']):.2f}
-                                * **Pendiente:** ${rest_p:.2f} | **Status:** {r['Pago']}
-                                """)
-                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
-                else: st.write("Sin paquetes.")
+                            if st.button(f"REPORTE", key=f"rep_{r['ID_Barra']}"):
+                                st.info(f"Total: ${float(r['Monto_USD']):.2f} | Abonado: ${float(r['Abonado']):.2f}")
 
 # --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
@@ -329,30 +259,16 @@ def render_client_dashboard():
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u['correo'].lower()]
     if not mis_p: st.info("Sin envíos activos.")
     else:
-        busq_cli = st.text_input("🔍 Buscar paquete...", key="cli_s")
-        if busq_cli:
-            mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
-        c1, c2 = st.columns(2)
-        for i, p in enumerate(mis_p):
-            with (c1 if i % 2 == 0 else c2):
-                tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
-                perc = (abo / tot * 100) if tot > 0 else 0
+        for p in mis_p:
+            tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
+            perc = (abo / tot * 100) if tot > 0 else 0
+            with st.container():
                 st.markdown(f"""
                 <div class="p-card">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color:#60a5fa; font-weight:800; font-size: 20px;">{obtener_icono_transporte(p.get('Tipo_Traslado'))} #{p['ID_Barra']}</span>
-                        <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 4px 10px; border-radius:10px; font-size:11px;">{p['Estado']}</span>
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <small style="opacity:0.7;">Total a pagar</small>
-                        <div style="font-size: 26px; font-weight: 800; color:white;">${tot:.2f}</div>
-                    </div>
-                    <div style="width: 100%; background-color: rgba(239, 68, 68, 0.3); height: 8px; border-radius: 4px; margin-top: 15px;">
+                    <span style="color:#60a5fa; font-weight:800; font-size: 20px;">{obtener_icono_transporte(p.get('Tipo_Traslado'))} #{p['ID_Barra']}</span> - {p['Estado']}
+                    <div style="font-size: 26px; font-weight: 800; color:white;">Total: ${tot:.2f}</div>
+                    <div style="width: 100%; background-color: rgba(239, 68, 68, 0.3); height: 8px; border-radius: 4px; margin-top: 10px;">
                         <div style="width: {perc}%; background: #22c55e; height: 100%; border-radius: 4px;"></div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                        <span>Pagado: ${abo:.2f}</span>
-                        <span>Faltan: ${tot-abo:.2f}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -367,7 +283,7 @@ def render_header():
         mías = [n for n in st.session_state.notificaciones if n['para'] == target]
         with st.popover("🔔"):
             if mías:
-                for n in mías[:5]: st.markdown(f'<div class="notif-item"><b>{n["hora"]}</b> - {n["msg"]}</div>', unsafe_allow_html=True)
+                for n in mías[:5]: st.write(f"{n['hora']} - {n['msg']}")
             else: st.write("Sin avisos.")
     with col_s:
         if st.button("Cerrar Sesión"):
