@@ -28,15 +28,37 @@ st.markdown("""
         padding: 20px; margin-bottom: 20px;
     }
 
-    /* FIX: Color permanente del título del expander */
-    [data-testid="stExpander"] summary p {
-        color: #ffffff !important;
+    /* --- FIX DEFINITIVO: EXPANDERS AZULES PERMANENTES --- */
+    /* Forzamos el color de fondo azul y texto blanco siempre */
+    [data-testid="stExpander"] summary {
+        background-color: #2563eb !important; 
+        color: white !important;
+        border-radius: 12px !important;
+        padding: 10px 15px !important;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
-    
-    /* Asegura que al pasar el mouse (hover) no cambie el color del texto del título */
-    [data-testid="stExpander"] summary:hover p {
-        color: #ffffff !important;
+
+    /* Evitar que se ponga gris al abrirse o enfocarse */
+    [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary[aria-expanded="true"] {
+        background-color: #1d4ed8 !important; 
+        color: white !important;
     }
+
+    /* Asegurar que todos los elementos internos (texto y flecha) sean blancos */
+    [data-testid="stExpander"] summary p, 
+    [data-testid="stExpander"] summary span, 
+    [data-testid="stExpander"] summary svg {
+        color: white !important;
+        fill: white !important;
+    }
+
+    /* Hover: Un azul un poco más vibrante */
+    [data-testid="stExpander"] summary:hover {
+        background-color: #3b82f6 !important;
+    }
+    /* -------------------------------------------------- */
 
     .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
