@@ -20,7 +20,7 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
     
     /* Contenedores de Cristal */
-    .stDetails, .stTabs, .stForm, .p-card {
+    .stDetails, [data-testid="stExpander"], .stTabs, .stForm, .p-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -28,39 +28,15 @@ st.markdown("""
         padding: 20px; margin-bottom: 20px;
     }
 
-    /* --- FIX PARA EXPANDERS: AZUL PERMANENTE --- */
-    div[data-testid="stExpander"] {
-        background-color: #2563eb !important; /* Azul primario fijo */
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 12px !important;
-        transition: none !important; /* Elimina transiciones de color */
+    /* FIX: Color permanente del título del expander */
+    [data-testid="stExpander"] summary p {
+        color: #ffffff !important;
     }
-
-    /* Forzar el color en el título y el icono (flecha) */
-    div[data-testid="stExpander"] p, div[data-testid="stExpander"] svg {
-        color: white !important;
-        fill: white !important;
+    
+    /* Asegura que al pasar el mouse (hover) no cambie el color del texto del título */
+    [data-testid="stExpander"] summary:hover p {
+        color: #ffffff !important;
     }
-
-    /* Evitar el cambio de color al pasar el mouse (Hover) */
-    div[data-testid="stExpander"]:hover {
-        background-color: #2563eb !important;
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    /* Evitar el cambio de color cuando el expander está abierto o enfocado */
-    div[data-testid="stExpander"]:focus-within, 
-    div[data-testid="stExpander"][aria-expanded="true"] {
-        background-color: #2563eb !important;
-    }
-
-    /* Contenedor de detalles (lo que aparece al abrir) */
-    div[data-testid="stExpanderDetails"] {
-        background-color: rgba(15, 23, 42, 0.4) !important; /* Un azul muy oscuro para que se lea el contenido */
-        border-radius: 0 0 12px 12px !important;
-        padding: 15px !important;
-    }
-    /* ------------------------------------------- */
 
     .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
@@ -104,8 +80,6 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-
-# --- (El resto del código de lógica de datos y dashboards permanece igual para asegurar el funcionamiento) ---
 
 # --- 2. GESTIÓN DE DATOS ---
 ARCHIVO_DB, ARCHIVO_USUARIOS, ARCHIVO_PAPELERA, ARCHIVO_NOTIF = "inventario_logistica.csv", "usuarios_iacargo.csv", "papelera_iacargo.csv", "notificaciones_iac.csv"
