@@ -208,7 +208,7 @@ def render_admin_dashboard():
             if st.session_state.papelera:
                 g_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
                 if st.button("♻️ RESTAURAR SELECCIONADO"):
-                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == g_res)
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] != g_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != g_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
@@ -258,6 +258,7 @@ def render_admin_dashboard():
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                             badge = '<span style="color:#a78bfa; font-size:10px; margin-left:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                            # --- FECHA EN RESUMEN ---
                             f_reg_str = pd.to_datetime(r['Fecha_Registro']).strftime('%d/%m/%Y')
                             st.markdown(f"""
                                 <div class="resumen-row">
@@ -298,7 +299,7 @@ def render_admin_dashboard():
                         st.write(f"Monto pendiente: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("Sin pagos atrasados.")
 
-# --- 4. DASHBOARD CLIENTE (ACTUALIZADO CON FECHA) ---
+# --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -313,10 +314,7 @@ def render_client_dashboard():
             with (c1 if i % 2 == 0 else c2):
                 tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
                 perc = (abo / tot * 100) if tot > 0 else 0
-                
-                # --- NUEVO: Formato de Fecha en Interfaz de Usuario ---
-                f_reg_str = pd.to_datetime(p.get('Fecha_Registro', datetime.now())).strftime('%d/%m/%Y')
-                
+                f_reg_str = pd.to_datetime(p.get('Fecha_Registro')).strftime('%d/%m/%Y')
                 bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
                 
                 st.markdown(f"""
@@ -328,7 +326,6 @@ def render_client_dashboard():
                         </div>
                         <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 6px 12px; border-radius:12px; font-size:12px; font-weight:bold;">{p["Estado"]}</span>
                     </div>
-                    
                     <div style="margin-top: 20px;">
                         <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
                         <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f}</div>
