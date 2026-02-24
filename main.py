@@ -20,13 +20,47 @@ st.markdown("""
     [data-testid="stSidebar"] { display: none; }
     
     /* Contenedores de Cristal */
-    .stDetails, [data-testid="stExpander"], .stTabs, .stForm, .p-card {
+    .stDetails, .stTabs, .stForm, .p-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 20px !important; 
         padding: 20px; margin-bottom: 20px;
     }
+
+    /* --- FIX PARA EXPANDERS: AZUL PERMANENTE --- */
+    div[data-testid="stExpander"] {
+        background-color: #2563eb !important; /* Azul primario fijo */
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 12px !important;
+        transition: none !important; /* Elimina transiciones de color */
+    }
+
+    /* Forzar el color en el título y el icono (flecha) */
+    div[data-testid="stExpander"] p, div[data-testid="stExpander"] svg {
+        color: white !important;
+        fill: white !important;
+    }
+
+    /* Evitar el cambio de color al pasar el mouse (Hover) */
+    div[data-testid="stExpander"]:hover {
+        background-color: #2563eb !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Evitar el cambio de color cuando el expander está abierto o enfocado */
+    div[data-testid="stExpander"]:focus-within, 
+    div[data-testid="stExpander"][aria-expanded="true"] {
+        background-color: #2563eb !important;
+    }
+
+    /* Contenedor de detalles (lo que aparece al abrir) */
+    div[data-testid="stExpanderDetails"] {
+        background-color: rgba(15, 23, 42, 0.4) !important; /* Un azul muy oscuro para que se lea el contenido */
+        border-radius: 0 0 12px 12px !important;
+        padding: 15px !important;
+    }
+    /* ------------------------------------------- */
 
     .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
@@ -70,6 +104,8 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+
+# --- (El resto del código de lógica de datos y dashboards permanece igual para asegurar el funcionamiento) ---
 
 # --- 2. GESTIÓN DE DATOS ---
 ARCHIVO_DB, ARCHIVO_USUARIOS, ARCHIVO_PAPELERA, ARCHIVO_NOTIF = "inventario_logistica.csv", "usuarios_iacargo.csv", "papelera_iacargo.csv", "notificaciones_iac.csv"
@@ -217,7 +253,6 @@ def render_admin_dashboard():
                     st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # --- SECCIÓN ACTUALIZADA: PESTAÑA RESUMEN ---
     with t_res:
         st.subheader("📋 Resumen Logístico por Estados")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
@@ -244,7 +279,6 @@ def render_admin_dashboard():
                         badge_reempaque = ' <span style="color:#a78bfa; font-size:10px; font-weight:bold;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
                         modalidad = r.get('Modalidad', 'Pago Completo')
                         
-                        # Fila superior de información rápida
                         st.markdown(f"""
                             <div class="resumen-row">
                                 <div style="display: flex; align-items: center; gap: 15px;">
@@ -259,7 +293,6 @@ def render_admin_dashboard():
                             </div>
                         """, unsafe_allow_html=True)
                         
-                        # Expander de detalles (Toggle natural)
                         with st.expander(f"🔍 DETALLES DE {r['ID_Barra']}"):
                             rest_p = float(r['Monto_USD']) - float(r['Abonado'])
                             c_aud1, c_aud2 = st.columns(2)
