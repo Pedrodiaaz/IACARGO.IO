@@ -19,7 +19,7 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* Contenedores de Cristal (Glassmorphism) */
+    /* Contenedores de Cristal */
     .stDetails, [data-testid="stExpander"], .stTabs, .stForm, .p-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
@@ -28,61 +28,31 @@ st.markdown("""
         padding: 20px; margin-bottom: 20px;
     }
 
-    /* Tarjetas de Paquete (Dashboard Cliente) */
-    .p-card {
-        transition: transform 0.3s ease;
-    }
+    .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
 
-    /* Títulos de los campos (Labels) en Blanco */
-    [data-testid="stWidgetLabel"] p {
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-    }
+    [data-testid="stWidgetLabel"] p { color: #ffffff !important; font-weight: 600 !important; }
 
-    /* FIX: Mantener color permanente en Expanders */
-    [data-testid="stExpander"] {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-    }
-    
-    [data-testid="stExpander"] summary {
-        color: #ffffff !important;
-    }
-
-    /* Botones de Identidad IACargo (Azul Vibrante) */
-    div.stButton > button, .stForm div.stButton > button {
+    div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important; 
         border: none !important;
         font-weight: 700 !important;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
         width: 100% !important; 
         padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
-        transition: all 0.3s ease-in-out !important;
-    }
-    div.stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
     }
 
-    /* Inputs Estilizados */
-    div[data-baseweb="input"] { 
-        border-radius: 12px !important; 
-        background-color: rgba(255, 255, 255, 0.9) !important; 
-    }
+    div[data-baseweb="input"] { border-radius: 12px !important; background-color: rgba(255, 255, 255, 0.9) !important; }
     div[data-baseweb="input"] input { color: #0f172a !important; font-weight: 600 !important; }
 
-    /* Logo Animado */
     .logo-animado {
         font-style: italic !important; font-family: 'Georgia', serif;
         background: linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa);
         background-size: 200% auto;
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        display: inline-block; animation: shine 3s linear infinite; font-weight: 800;
+        animation: shine 3s linear infinite; font-weight: 800;
     }
     @keyframes shine { to { background-position: 200% center; } }
 
@@ -90,12 +60,8 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.95);
         color: #0f172a; padding: 12px 18px; border-radius: 12px;
         display: flex; justify-content: space-between; align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     
-    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 600 !important; }
-    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
-
     .welcome-text { 
         font-size: 32px; font-weight: 800; 
         background: linear-gradient(90deg, #ffffff, #94a3b8);
@@ -108,7 +74,6 @@ st.markdown("""
 ARCHIVO_DB, ARCHIVO_USUARIOS, ARCHIVO_PAPELERA, ARCHIVO_NOTIF = "inventario_logistica.csv", "usuarios_iacargo.csv", "papelera_iacargo.csv", "notificaciones_iac.csv"
 
 def calcular_monto(valor, tipo, aplica_reempaque=False):
-    # Lógica de negocio: Aéreo por peso, Marítimo por dimensión
     monto = (valor * TARIFA_AEREO_KG) if tipo == "Aéreo" else (valor * TARIFA_MARITIMO_FT3) if tipo == "Marítimo" else (valor * 5.0)
     return monto + COSTO_REEMPAQUE_FIJO if aplica_reempaque else monto
 
@@ -141,8 +106,7 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. DASHBOARDS ---
-
+# --- 3. DASHBOARDS ADMIN (Se mantiene igual para consistencia) ---
 def render_admin_dashboard():
     st.markdown('<div class="welcome-text">Consola de Control Logístico</div>', unsafe_allow_html=True)
     tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN", "🚨 ALERTAS"])
@@ -151,7 +115,6 @@ def render_admin_dashboard():
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
-        # REGLA: Aéreo es peso, Marítimo es Dimensión
         label_din = "Pies Cúbicos (ft³)" if f_tra == "Marítimo" else "Peso (Kilogramos)"
         with st.form("reg_form"):
             col1, col2 = st.columns(2)
@@ -194,7 +157,8 @@ def render_admin_dashboard():
         
         for p in p_pago:
             rest = float(p['Monto_USD']) - float(p['Abonado'])
-            with st.expander(f"💵 {p['Cliente']} | {p['ID_Barra']} (Deuda: ${rest:.2f})"):
+            with st.expander(f"💵 {p['Cliente']} | {p['ID_Barra']} ({p.get('Modalidad', 'N/A')})"):
+                st.write(f"Deuda Total: ${rest:.2f}")
                 m_abono = st.number_input(f"Abonar a {p['ID_Barra']}:", 0.0, float(rest), float(rest), key=f"c_{p['ID_Barra']}")
                 if st.button("REGISTRAR PAGO", key=f"b_{p['ID_Barra']}"):
                     p['Abonado'] = float(p['Abonado']) + m_abono
@@ -303,7 +267,7 @@ def render_admin_dashboard():
                         st.write(f"Monto pendiente: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("Sin pagos atrasados.")
 
-# --- 4. DASHBOARD CLIENTE ---
+# --- 4. DASHBOARD CLIENTE (ACTUALIZADO CON PLAN DE PAGO) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -320,9 +284,14 @@ def render_client_dashboard():
                 perc = (abo / tot * 100) if tot > 0 else 0
                 bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
                 
-                # --- MODIFICACIÓN: EXTRACCIÓN Y FORMATO DE FECHA ---
                 fecha_formateada = pd.to_datetime(p['Fecha_Registro']).strftime('%d/%m/%Y')
+                modalidad = p.get('Modalidad', 'No especificada')
                 
+                # Definición de color para el Badge de Modalidad
+                mod_color = "#60a5fa" # Azul por defecto (Pago Completo)
+                if modalidad == "Pago en Cuotas": mod_color = "#a78bfa" # Morado (Evolución)
+                if modalidad == "Cobro Destino": mod_color = "#fbbf24" # Ámbar (Pendiente en destino)
+
                 st.markdown(f"""
                 <div class="p-card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -330,7 +299,10 @@ def render_client_dashboard():
                             <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
                             <div style="color:#94a3b8; font-size:11px; font-weight:600; margin-top:2px;">Registrado: {fecha_formateada}</div>
                         </div>
-                        <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 6px 12px; border-radius:12px; font-size:12px; font-weight:bold;">{p["Estado"]}</span>
+                        <div style="text-align: right;">
+                            <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 4px 10px; border-radius:10px; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">{p["Estado"]}</span>
+                            <span style="background:{mod_color}33; color:{mod_color}; padding: 4px 10px; border-radius:10px; font-size:10px; font-weight:bold; border: 1px solid {mod_color}66;">{modalidad.upper()}</span>
+                        </div>
                     </div>
                     <div style="margin-top: 15px;">
                         <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
