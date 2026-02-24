@@ -285,7 +285,7 @@ def render_admin_dashboard():
                         st.write(f"Deuda: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("No hay morosidad crítica.")
 
-# --- 4. DASHBOARD CLIENTE (REVISADO Y CORREGIDO) ---
+# --- 4. DASHBOARD CLIENTE (CORREGIDO) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -304,48 +304,44 @@ def render_client_dashboard():
         
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
+                # Cálculos
                 tot = float(p.get('Monto_USD', 0.0))
                 abo = float(p.get('Abonado', 0.0))
                 faltante = tot - abo
                 perc = (abo / tot * 100) if tot > 0 else 0
-                
-                # Manejo de fecha robusto
                 fecha_reg = pd.to_datetime(p.get('Fecha_Registro', hoy))
                 dias_atraso = (hoy - fecha_reg).days
-                
-                alerta_mora = ""
+                icono = obtener_icono_transporte(p.get('Tipo_Traslado'))
+
+                # Alerta de mora (solo si aplica)
+                alerta_html = ""
                 if dias_atraso > 15 and p.get('Pago') != 'PAGADO':
-                    alerta_mora = f"""
-                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 8px 12px; margin: 15px 0; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 20px;">🔔</span>
-                        <div>
-                            <div style="color: #f87171; font-size: 11px; font-weight: 800; text-transform: uppercase;">Aviso de Morosidad</div>
-                            <div style="color: white; font-size: 10px; opacity: 0.9;">Paquete con {dias_atraso} días sin completar pago.</div>
-                        </div>
+                    alerta_html = f"""
+                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 10px; margin: 15px 0;">
+                        <div style="color: #f87171; font-size: 11px; font-weight: 800;">🔔 AVISO DE MOROSIDAD</div>
+                        <div style="color: white; font-size: 10px;">{dias_atraso} días sin pago completo.</div>
                     </div>
                     """
 
-                st.markdown(f"""
+                # Renderizado por bloques para evitar errores de llaves
+                card_head = f"""
                 <div class="p-card">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
-                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">
-                                {obtener_icono_transporte(p.get('Tipo_Traslado'))} #{p['ID_Barra']}
-                            </span>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{icono} #{p['ID_Barra']}</span>
                             <div style="color: #94a3b8; font-size: 11px; margin-top: 4px;">INGRESADO: {fecha_reg.strftime('%d/%m/%Y')}</div>
                         </div>
                         <span style="background:rgba(96,165,250,0.15); color:#60a5fa; border: 1px solid rgba(96,165,250,0.3); padding: 4px 12px; border-radius:20px; font-size:11px; font-weight:700;">
                             {p['Estado']}
                         </span>
                     </div>
-                    
                     <div style="margin-top: 20px;">
                         <small style="color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">Total del Servicio</small>
                         <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f} <span style="font-size: 14px; color: #64748b;">USD</span></div>
                     </div>
-
-                    {alerta_mora}
-
+                """
+                
+                card_progress = f"""
                     <div style="margin-top: 20px;">
                         <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
                             <span style="color: #22c55e; font-weight: 600;">Pagado: ${abo:.2f}</span>
@@ -357,7 +353,10 @@ def render_client_dashboard():
                         <div style="text-align: right; margin-top: 5px; font-size: 10px; color: #64748b;">{int(perc)}% completado</div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """
+                
+                # Unimos todo y lo mostramos
+                st.markdown(card_head + alerta_html + card_progress, unsafe_allow_html=True)
 
 # --- 5. LOGICA ACCESO ---
 def render_header():
