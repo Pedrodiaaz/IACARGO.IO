@@ -28,8 +28,19 @@ st.markdown("""
         padding: 20px; margin-bottom: 20px;
     }
 
-    /* --- FIX DEFINITIVO: EXPANDERS AZULES PERMANENTES --- */
-    /* Forzamos el color de fondo azul y texto blanco siempre */
+    /* --- CAMBIO: PESTAÑAS (TABS) CON LETRAS BLANCAS --- */
+    button[data-baseweb="tab"] p {
+        color: white !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
+    }
+    
+    /* Pestaña no seleccionada (un poco de transparencia para enfoque) */
+    button[data-baseweb="tab"][aria-selected="false"] p {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    /* --- EXPANDERS AZULES PERMANENTES --- */
     [data-testid="stExpander"] summary {
         background-color: #2563eb !important; 
         color: white !important;
@@ -39,14 +50,12 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 
-    /* Evitar que se ponga gris al abrirse o enfocarse */
     [data-testid="stExpander"] summary:focus,
     [data-testid="stExpander"] summary[aria-expanded="true"] {
         background-color: #1d4ed8 !important; 
         color: white !important;
     }
 
-    /* Asegurar que todos los elementos internos (texto y flecha) sean blancos */
     [data-testid="stExpander"] summary p, 
     [data-testid="stExpander"] summary span, 
     [data-testid="stExpander"] summary svg {
@@ -54,15 +63,13 @@ st.markdown("""
         fill: white !important;
     }
 
-    /* Hover: Un azul un poco más vibrante */
     [data-testid="stExpander"] summary:hover {
         background-color: #3b82f6 !important;
     }
-    /* -------------------------------------------------- */
 
+    /* RESTO DE ESTILOS */
     .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
-
     [data-testid="stWidgetLabel"] p { color: #ffffff !important; font-weight: 600 !important; }
 
     div.stButton > button {
