@@ -19,35 +19,20 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* ESTILO FIJO PARA EXPANDERS (AZUL CON LETRAS BLANCAS) */
-    /* Esto sobreescribe el comportamiento nativo de Streamlit */
-    div[data-testid="stExpander"] {
-        background-color: #2563eb !important; /* Azul Primario */
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px;
+    /* Contenedores de Cristal */
+    .stDetails, [data-testid="stExpander"], .stTabs, .stForm, .p-card {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px); 
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important; 
+        padding: 20px; margin-bottom: 20px;
     }
 
-    /* Color de la letra del título del expander y el icono */
-    div[data-testid="stExpander"] p, div[data-testid="stExpander"] svg {
-        color: white !important;
-        font-weight: 700 !important;
-    }
+    .p-card { transition: transform 0.3s ease; }
+    .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
 
-    /* Contenedor interno cuando se abre el expander */
-    div[data-testid="stExpanderDetails"] {
-        background-color: rgba(15, 23, 42, 0.5) !important; /* Fondo oscuro para contraste */
-        color: white !important;
-        border-radius: 0 0 12px 12px !important;
-        padding: 20px;
-    }
+    [data-testid="stWidgetLabel"] p { color: #ffffff !important; font-weight: 600 !important; }
 
-    /* Evitar que cambie de color al hacer focus o click */
-    div[data-testid="stExpander"]:focus-within {
-        border-color: #60a5fa !important;
-    }
-
-    /* Botones y Widgets */
     div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
@@ -128,7 +113,6 @@ def render_admin_dashboard():
     tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN", "🚨 ALERTAS"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res, t_ale = tabs
 
-    # [TAB REGISTRO]
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
@@ -151,7 +135,6 @@ def render_admin_dashboard():
                     st.session_state.id_actual = generar_id_unico()
                     st.rerun()
 
-    # [TAB VALIDACIÓN]
     with t_val:
         st.subheader("Validación de Carga")
         pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
@@ -166,7 +149,6 @@ def render_admin_dashboard():
                 paq['Monto_USD'] = calcular_monto(valor_real, paq['Tipo_Traslado'], paq.get('Reempaque', False))
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # [TAB COBROS]
     with t_cob:
         st.subheader("Gestión de Cobros")
         busq_cobro = st.text_input("🔍 Buscar paquete o cliente para cobrar:", key="sc")
@@ -184,7 +166,6 @@ def render_admin_dashboard():
                     if (float(p['Monto_USD']) - p['Abonado']) <= 0.01: p['Pago'] = 'PAGADO'
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # [TAB ESTADOS]
     with t_est:
         st.subheader("Actualizar Ubicación")
         if st.session_state.inventario:
@@ -197,7 +178,6 @@ def render_admin_dashboard():
                 registrar_notificacion(paq['Correo'], f"Tu paquete {paq['ID_Barra']} está en: {n_st}")
                 guardar_datos(st.session_state.inventario, ARCHIVO_DB); st.rerun()
 
-    # [TAB AUDITORÍA]
     with t_aud:
         st.subheader("🕵️ Auditoría y Gestión")
         v_papelera = st.checkbox("📂 Ver Papelera de Reciclaje")
@@ -237,7 +217,7 @@ def render_admin_dashboard():
                     st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # [TAB RESUMEN - CON TOGGLE DE DETALLES FIJOS]
+    # --- SECCIÓN ACTUALIZADA: PESTAÑA RESUMEN ---
     with t_res:
         st.subheader("📋 Resumen Logístico por Estados")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
@@ -264,7 +244,7 @@ def render_admin_dashboard():
                         badge_reempaque = ' <span style="color:#a78bfa; font-size:10px; font-weight:bold;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
                         modalidad = r.get('Modalidad', 'Pago Completo')
                         
-                        # Fila superior de información rápida (HTML blanco con texto oscuro)
+                        # Fila superior de información rápida
                         st.markdown(f"""
                             <div class="resumen-row">
                                 <div style="display: flex; align-items: center; gap: 15px;">
@@ -279,7 +259,7 @@ def render_admin_dashboard():
                             </div>
                         """, unsafe_allow_html=True)
                         
-                        # Expander de detalles (Ahora fijo Azul)
+                        # Expander de detalles (Toggle natural)
                         with st.expander(f"🔍 DETALLES DE {r['ID_Barra']}"):
                             rest_p = float(r['Monto_USD']) - float(r['Abonado'])
                             c_aud1, c_aud2 = st.columns(2)
@@ -299,7 +279,6 @@ def render_admin_dashboard():
                 else:
                     st.write("No hay paquetes en esta categoría.")
 
-    # [TAB ALERTAS]
     with t_ale:
         st.subheader("🚨 Centro de Alertas Críticas")
         ca1, ca2 = st.columns(2)
