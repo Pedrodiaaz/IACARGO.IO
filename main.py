@@ -106,12 +106,13 @@ if 'usuario_identificado' not in st.session_state: st.session_state.usuario_iden
 if 'id_actual' not in st.session_state: st.session_state.id_actual = generar_id_unico()
 if 'landing_vista' not in st.session_state: st.session_state.landing_vista = True
 
-# --- 3. DASHBOARDS ADMIN (Se mantiene igual para consistencia) ---
+# --- 3. DASHBOARDS ADMIN ---
 def render_admin_dashboard():
     st.markdown('<div class="welcome-text">Consola de Control Logístico</div>', unsafe_allow_html=True)
     tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN", "🚨 ALERTAS"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res, t_ale = tabs
 
+    # [REGISTRO, VALIDACIÓN, COBROS, ESTADOS, AUDITORÍA se mantienen igual...]
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
@@ -216,30 +217,63 @@ def render_admin_dashboard():
                     st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
+    # --- SECCIÓN MODIFICADA: PESTAÑA RESUMEN ---
     with t_res:
         st.subheader("📋 Resumen Logístico por Estados")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
         df_res = pd.DataFrame(st.session_state.inventario)
+        
         if b_box and not df_res.empty:
             df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(b_box, case=False)]
         
-        config_est = [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), ("EN TRANSITO", "✈️ EN TRÁNSITO"), ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), ("ENTREGADO", "✅ ENTREGADO")]
+        config_est = [
+            ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), 
+            ("EN TRANSITO", "✈️ EN TRÁNSITO"), 
+            ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), 
+            ("ENTREGADO", "✅ ENTREGADO")
+        ]
         
         for est_id, label in config_est:
             df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
             with st.expander(f"{label} ({len(df_f)})", expanded=True if b_box else False):
                 if not df_f.empty:
                     for _, r in df_f.iterrows():
+                        # Procesar fecha y datos adicionales
+                        f_reg = pd.to_datetime(r['Fecha_Registro']).strftime('%d/%m/%y')
                         col_info, col_btn = st.columns([4, 1])
+                        
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                            badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div><div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
+                            badge_reempaque = '<span style="color:#a78bfa; font-size:10px; font-weight:bold;"> [REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                            modalidad = r.get('Modalidad', 'Pago Completo')
+                            
+                            st.markdown(f"""
+                                <div class="resumen-row">
+                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                        <div style="color:#2563eb; font-weight:800; min-width:110px;">{icon} {r["ID_Barra"]}</div>
+                                        <div style="border-left: 1px solid #cbd5e1; height: 20px;"></div>
+                                        <div>
+                                            <b style="color:#1e293b;">{r["Cliente"]}</b>
+                                            <div style="font-size:10px; color:#64748b;">Registrado: {f_reg} | {modalidad} {badge_reempaque}</div>
+                                        </div>
+                                    </div>
+                                    <div style="color:#64748b; font-size:12px; font-weight:700;">{r["Tipo_Traslado"]}</div>
+                                </div>
+                            """, unsafe_allow_html=True)
+                        
                         with col_btn:
-                            if st.button(f"VER", key=f"rep_{r['ID_Barra']}"):
+                            # Botón de reporte restaurado
+                            if st.button(f"DETALLES", key=f"rep_adm_{r['ID_Barra']}"):
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
-                                st.info(f"ID: {r['ID_Barra']} | Total ${float(r['Monto_USD']):.2f} | Falta: ${rest_p:.2f}")
+                                st.info(f"""
+                                **Reporte Rápido: {r['ID_Barra']}**
+                                * Total: ${float(r['Monto_USD']):.2f}
+                                * Abonado: ${float(r['Abonado']):.2f}
+                                * Pendiente: ${rest_p:.2f}
+                                """)
                         st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
+                else:
+                    st.write("No hay paquetes en esta categoría.")
 
     with t_ale:
         st.subheader("🚨 Centro de Alertas Críticas")
@@ -267,7 +301,7 @@ def render_admin_dashboard():
                         st.write(f"Monto pendiente: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("Sin pagos atrasados.")
 
-# --- 4. DASHBOARD CLIENTE (ACTUALIZADO CON PLAN DE PAGO) ---
+# --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -287,10 +321,9 @@ def render_client_dashboard():
                 fecha_formateada = pd.to_datetime(p['Fecha_Registro']).strftime('%d/%m/%Y')
                 modalidad = p.get('Modalidad', 'No especificada')
                 
-                # Definición de color para el Badge de Modalidad
-                mod_color = "#60a5fa" # Azul por defecto (Pago Completo)
-                if modalidad == "Pago en Cuotas": mod_color = "#a78bfa" # Morado (Evolución)
-                if modalidad == "Cobro Destino": mod_color = "#fbbf24" # Ámbar (Pendiente en destino)
+                mod_color = "#60a5fa" 
+                if modalidad == "Pago en Cuotas": mod_color = "#a78bfa"
+                if modalidad == "Cobro Destino": mod_color = "#fbbf24"
 
                 st.markdown(f"""
                 <div class="p-card">
