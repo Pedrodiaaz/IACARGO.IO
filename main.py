@@ -28,18 +28,19 @@ st.markdown("""
         padding: 20px; margin-bottom: 20px;
     }
 
-    /* PESTAÑAS (TABS) */
+    /* --- CAMBIO: PESTAÑAS (TABS) CON LETRAS BLANCAS --- */
     button[data-baseweb="tab"] p {
         color: white !important;
         font-weight: 700 !important;
         font-size: 14px !important;
     }
     
+    /* Pestaña no seleccionada (un poco de transparencia para enfoque) */
     button[data-baseweb="tab"][aria-selected="false"] p {
         color: rgba(255, 255, 255, 0.6) !important;
     }
 
-    /* EXPANDERS AZULES */
+    /* --- EXPANDERS AZULES PERMANENTES --- */
     [data-testid="stExpander"] summary {
         background-color: #2563eb !important; 
         color: white !important;
@@ -49,9 +50,29 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 
-    /* --- FORMATO DE BOTONES PRIMARIOS --- */
-    /* Este estilo aplica a los botones normales y a los de formulario (Submit) */
-    div.stButton > button, div.stForm submit_button > button, .stBaseButton-primary {
+    [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary[aria-expanded="true"] {
+        background-color: #1d4ed8 !important; 
+        color: white !important;
+    }
+
+    [data-testid="stExpander"] summary p, 
+    [data-testid="stExpander"] summary span, 
+    [data-testid="stExpander"] summary svg {
+        color: white !important;
+        fill: white !important;
+    }
+
+    [data-testid="stExpander"] summary:hover {
+        background-color: #3b82f6 !important;
+    }
+
+    /* RESTO DE ESTILOS */
+    .p-card { transition: transform 0.3s ease; }
+    .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
+    [data-testid="stWidgetLabel"] p { color: #ffffff !important; font-weight: 600 !important; }
+
+    div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important; 
@@ -60,13 +81,6 @@ st.markdown("""
         width: 100% !important; 
         padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    div.stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6) !important;
     }
 
     div[data-baseweb="input"] { border-radius: 12px !important; background-color: rgba(255, 255, 255, 0.9) !important; }
@@ -150,7 +164,6 @@ def render_admin_dashboard():
             f_pes = col2.number_input(label_din, min_value=0.0, step=0.1)
             f_mod = st.selectbox("Modalidad de Pago", ["Pago Completo", "Cobro Destino", "Pago en Cuotas"])
             f_reemp = st.checkbox("📦 ¿Solicita Reempaque Especial? (+$5.00)")
-            # Botón con estilo primario aplicado vía CSS
             if st.form_submit_button("REGISTRAR PAQUETE"):
                 if f_id and f_cli and f_cor:
                     monto_calc = calcular_monto(f_pes, f_tra, f_reemp)
@@ -161,7 +174,6 @@ def render_admin_dashboard():
                     st.session_state.id_actual = generar_id_unico()
                     st.rerun()
 
-    # (El resto del código se mantiene igual que tu base para asegurar la sincronía total)
     with t_val:
         st.subheader("Validación de Carga")
         pendientes = [p for p in st.session_state.inventario if not p.get('Validado')]
@@ -212,7 +224,7 @@ def render_admin_dashboard():
             if st.session_state.papelera:
                 g_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
                 if st.button("♻️ RESTAURAR SELECCIONADO"):
-                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] != g_res)
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == g_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != g_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
@@ -248,47 +260,136 @@ def render_admin_dashboard():
         st.subheader("📋 Resumen Logístico por Estados")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
         df_res = pd.DataFrame(st.session_state.inventario)
+        
         if b_box and not df_res.empty:
             df_res = df_res[df_res['ID_Barra'].astype(str).str.contains(b_box, case=False)]
         
-        config_est = [("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), ("EN TRANSITO", "✈️ EN TRÁNSITO"), ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), ("ENTREGADO", "✅ ENTREGADO")]
+        config_est = [
+            ("RECIBIDO ALMACEN PRINCIPAL", "📦 EN ALMACÉN ORIGEN"), 
+            ("EN TRANSITO", "✈️ EN TRÁNSITO"), 
+            ("RECIBIDO EN ALMACEN DE DESTINO", "🏢 ALMACÉN DESTINO"), 
+            ("ENTREGADO", "✅ ENTREGADO")
+        ]
+        
         for est_id, label in config_est:
             df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
+            
             with st.expander(f"{label} ({len(df_f)})", expanded=True if b_box else False):
                 if not df_f.empty:
                     for _, r in df_f.iterrows():
                         f_reg = pd.to_datetime(r['Fecha_Registro']).strftime('%d/%m/%y')
-                        st.markdown(f'<div class="resumen-row"><div style="display: flex; align-items: center; gap: 15px;"><div style="color:#2563eb; font-weight:800; min-width:110px;">{obtener_icono_transporte(r.get("Tipo_Traslado"))} {r["ID_Barra"]}</div><div style="border-left: 1px solid #cbd5e1; height: 20px;"></div><div><b style="color:#1e293b;">{r["Cliente"]}</b><div style="font-size:10px; color:#64748b;">Registrado: {f_reg}</div></div></div><div style="color:#64748b; font-size:12px; font-weight:700;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
+                        icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
+                        badge_reempaque = ' <span style="color:#a78bfa; font-size:10px; font-weight:bold;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                        modalidad = r.get('Modalidad', 'Pago Completo')
+                        
+                        st.markdown(f"""
+                            <div class="resumen-row">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="color:#2563eb; font-weight:800; min-width:110px;">{icon} {r["ID_Barra"]}</div>
+                                    <div style="border-left: 1px solid #cbd5e1; height: 20px;"></div>
+                                    <div>
+                                        <b style="color:#1e293b;">{r["Cliente"]}</b>
+                                        <div style="font-size:10px; color:#64748b;">Registrado: {f_reg} | {modalidad}{badge_reempaque}</div>
+                                    </div>
+                                </div>
+                                <div style="color:#64748b; font-size:12px; font-weight:700;">{r["Tipo_Traslado"]}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        with st.expander(f"🔍 DETALLES DE {r['ID_Barra']}"):
+                            rest_p = float(r['Monto_USD']) - float(r['Abonado'])
+                            c_aud1, c_aud2 = st.columns(2)
+                            with c_aud1:
+                                st.write(f"**Cliente:** {r['Cliente']}")
+                                st.write(f"**Correo:** {r['Correo']}")
+                                st.write(f"**Modalidad:** {modalidad}")
+                            with c_aud2:
+                                st.write(f"**Monto Total:** ${float(r['Monto_USD']):.2f}")
+                                st.write(f"**Abonado:** ${float(r['Abonado']):.2f}")
+                                if rest_p > 0:
+                                    st.error(f"**Pendiente:** ${rest_p:.2f}")
+                                else:
+                                    st.success("✅ TOTALMENTE PAGADO")
+                        
+                        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+                else:
+                    st.write("No hay paquetes en esta categoría.")
 
     with t_ale:
         st.subheader("🚨 Centro de Alertas Críticas")
         ca1, ca2 = st.columns(2)
         with ca1:
-            st.markdown("#### ⚖️ Variación de Peso")
+            st.markdown("#### ⚖️ Variación de Peso/Volumen")
             alertas_p = [p for p in st.session_state.inventario if p.get('Validado') and abs(float(p['Peso_Mensajero']) - float(p['Peso_Almacen'])) > 0.01]
             if alertas_p:
-                for a in alertas_p: st.error(f"⚠️ {a['ID_Barra']}: Dif. {abs(float(a['Peso_Mensajero']) - float(a['Peso_Almacen'])):.2f}")
-            else: st.success("Todo validado.")
+                for a in alertas_p:
+                    diff = abs(float(a['Peso_Mensajero']) - float(a['Peso_Almacen']))
+                    with st.expander(f"⚠️ DISCREPANCIA: {a['ID_Barra']}", expanded=True):
+                        st.error(f"Variación de **{diff:.2f}** detectada.")
+                        st.write(f"Mensajero: {a['Peso_Mensajero']} vs Almacén: {a['Peso_Almacen']}")
+            else: st.success("Todo validado correctamente.")
+
         with ca2:
-            st.markdown("#### ⏳ Morosidad")
-            alertas_m = [p for p in st.session_state.inventario if p['Pago'] != 'PAGADO' and (datetime.now() - pd.to_datetime(p['Fecha_Registro'])).days > 15]
+            st.markdown("#### ⏳ Morosidad (+15 días)")
+            hoy = datetime.now()
+            alertas_m = [p for p in st.session_state.inventario if p['Pago'] != 'PAGADO' and (hoy - pd.to_datetime(p['Fecha_Registro'])).days > 15]
             if alertas_m:
-                for m in alertas_m: st.warning(f"🛑 {m['Cliente']}: {m['ID_Barra']}")
-            else: st.success("Sin atrasos.")
+                for m in alertas_m:
+                    dias = (hoy - pd.to_datetime(m['Fecha_Registro'])).days
+                    with st.expander(f"🛑 CRÍTICO: {m['Cliente']}", expanded=True):
+                        st.warning(f"Paquete {m['ID_Barra']} lleva **{dias} días** pendiente.")
+                        st.write(f"Monto pendiente: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
+            else: st.success("Sin pagos atrasados.")
 
 # --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u['correo'].lower()]
-    if not mis_p: st.info("No tienes envíos activos.")
+    
+    if not mis_p: 
+        st.info("No tienes envíos activos en este momento.")
     else:
+        st.text_input("🔍 Buscar entre mis paquetes:", key="cli_s")
         c1, c2 = st.columns(2)
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
                 tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
                 perc = (abo / tot * 100) if tot > 0 else 0
-                st.markdown(f'<div class="p-card"><span style="color:#60a5fa; font-weight:800; font-size: 20px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span><br><small>{p["Estado"]}</small><div style="font-size: 24px; font-weight: 800; margin: 10px 0;">${tot:.2f}</div><div style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px;"><div style="width: {perc}%; background: #22c55e; height: 100%; border-radius: 4px;"></div></div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;"><span>Abonado: ${abo:.2f}</span><span>Falta: ${tot-abo:.2f}</span></div></div>', unsafe_allow_html=True)
+                bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
+                
+                fecha_formateada = pd.to_datetime(p['Fecha_Registro']).strftime('%d/%m/%Y')
+                modalidad = p.get('Modalidad', 'No especificada')
+                
+                mod_color = "#60a5fa" 
+                if modalidad == "Pago en Cuotas": mod_color = "#a78bfa"
+                if modalidad == "Cobro Destino": mod_color = "#fbbf24"
+
+                st.markdown(f"""
+                <div class="p-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                            <div style="color:#94a3b8; font-size:11px; font-weight:600; margin-top:2px;">Registrado: {fecha_formateada}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 4px 10px; border-radius:10px; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">{p["Estado"]}</span>
+                            <span style="background:{mod_color}33; color:{mod_color}; padding: 4px 10px; border-radius:10px; font-size:10px; font-weight:bold; border: 1px solid {mod_color}66;">{modalidad.upper()}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
+                        <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f}</div>
+                    </div>
+                    <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 10px; border-radius: 5px; margin-top: 20px; overflow: hidden;">
+                        <div style="width: {perc}%; background: {bar_color}; height: 100%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; font-weight: 600;">
+                        <span style="color:#22c55e;">Abonado: ${abo:.2f}</span>
+                        <span style="color:#94a3b8;">Falta: ${tot-abo:.2f}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # --- 5. LOGICA ACCESO ---
 def render_header():
