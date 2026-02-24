@@ -285,7 +285,7 @@ def render_admin_dashboard():
                         st.write(f"Deuda: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("No hay morosidad crítica.")
 
-# --- 4. DASHBOARD CLIENTE (ACTUALIZADO) ---
+# --- 4. DASHBOARD CLIENTE (REVISADO Y CORREGIDO) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
@@ -309,18 +309,18 @@ def render_client_dashboard():
                 faltante = tot - abo
                 perc = (abo / tot * 100) if tot > 0 else 0
                 
-                fecha_reg = pd.to_datetime(p['Fecha_Registro'])
+                # Manejo de fecha robusto
+                fecha_reg = pd.to_datetime(p.get('Fecha_Registro', hoy))
                 dias_atraso = (hoy - fecha_reg).days
-                alerta_mora = ""
                 
-                # Icono de alerta de atraso si > 15 días y no pagado
-                if dias_atraso > 15 and p['Pago'] != 'PAGADO':
+                alerta_mora = ""
+                if dias_atraso > 15 and p.get('Pago') != 'PAGADO':
                     alerta_mora = f"""
                     <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 8px 12px; margin: 15px 0; display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 20px;">🔔</span>
                         <div>
-                            <div style="color: #f87171; font-size: 12px; font-weight: 800; text-transform: uppercase;">Aviso de Morosidad</div>
-                            <div style="color: white; font-size: 11px; opacity: 0.9;">Paquete con {dias_atraso} días de antigüedad sin completar pago.</div>
+                            <div style="color: #f87171; font-size: 11px; font-weight: 800; text-transform: uppercase;">Aviso de Morosidad</div>
+                            <div style="color: white; font-size: 10px; opacity: 0.9;">Paquete con {dias_atraso} días sin completar pago.</div>
                         </div>
                     </div>
                     """
@@ -352,7 +352,7 @@ def render_client_dashboard():
                             <span style="color: #f87171; font-weight: 600;">Pendiente: ${faltante:.2f}</span>
                         </div>
                         <div style="width: 100%; background-color: rgba(239, 68, 68, 0.2); height: 10px; border-radius: 5px; overflow: hidden;">
-                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 5px; transition: width 0.5s ease;"></div>
+                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 5px;"></div>
                         </div>
                         <div style="text-align: right; margin-top: 5px; font-size: 10px; color: #64748b;">{int(perc)}% completado</div>
                     </div>
