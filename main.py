@@ -9,7 +9,7 @@ from datetime import datetime
 # --- 1. CONFIGURACIÓN E IDENTIDAD VISUAL ---
 st.set_page_config(page_title="IACargo.io | Evolution System", layout="wide", page_icon="📦")
 
-TARIFA_AEREO_KG = 6.0  
+TARIFA_AEREO_KG = 6.0    
 TARIFA_MARITIMO_FT3 = 15.0  
 COSTO_REEMPAQUE_FIJO = 5.0 
 
@@ -19,7 +19,7 @@ st.markdown("""
     .stApp { background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%); color: #ffffff; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* Contenedores de Cristal */
+    /* Contenedores de Cristal (Glassmorphism) */
     .stDetails, [data-testid="stExpander"], .stTabs, .stForm {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(12px); 
@@ -28,40 +28,52 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
-    /* Estilo para las Tarjetas de Paquetes (Cliente) */
-    .p-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 25px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(10px);
-        transition: transform 0.3s ease;
-    }
-    .p-card:hover {
-        transform: translateY(-5px);
-        border-color: rgba(96, 165, 250, 0.4);
-    }
-
+    /* Títulos de los campos (Labels) en Blanco */
     [data-testid="stWidgetLabel"] p {
         color: #ffffff !important;
         font-weight: 600 !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* Botones IACargo */
+    /* FIX: Mantener color permanente en Expanders y anular efectos de interacción */
+    [data-testid="stExpander"] {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    [data-testid="stExpander"] summary {
+        background-color: transparent !important;
+        color: #ffffff !important;
+    }
+    
+    [data-testid="stExpander"] summary:hover, 
+    [data-testid="stExpander"] summary:focus,
+    [data-testid="stExpander"] summary:active {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        outline: none !important;
+    }
+
+    /* Botones de Identidad IACargo (Azul Vibrante) */
     div.stButton > button, .stForm div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important; 
         border: none !important;
         font-weight: 700 !important;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
         width: 100% !important; 
         padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+        transition: all 0.3s ease-in-out !important;
+    }
+    div.stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
     }
 
-    /* Inputs */
+    /* Inputs Estilizados */
     div[data-baseweb="input"] { 
         border-radius: 12px !important; 
         background-color: rgba(255, 255, 255, 0.9) !important; 
@@ -78,11 +90,20 @@ st.markdown("""
     }
     @keyframes shine { to { background-position: 200% center; } }
 
+    .resumen-row {
+        background: rgba(255, 255, 255, 0.95);
+        color: #0f172a; padding: 12px 18px; border-radius: 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 600 !important; }
+    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
+
     .welcome-text { 
         font-size: 32px; font-weight: 800; 
         background: linear-gradient(90deg, #ffffff, #94a3b8);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -250,11 +271,12 @@ def render_admin_dashboard():
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
                             badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'<div style="display:flex; align-items:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:10px;"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div></div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div><div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
                         with col_btn:
                             if st.button(f"DETALLE", key=f"rep_{r['ID_Barra']}"):
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
                                 st.info(f"Guía {r['ID_Barra']}: Total ${float(r['Monto_USD']):.2f} | Pendiente: ${rest_p:.2f}")
+                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
     with t_ale:
         st.subheader("🚨 Centro de Alertas Críticas")
@@ -267,6 +289,7 @@ def render_admin_dashboard():
                     diff = abs(float(a['Peso_Mensajero']) - float(a['Peso_Almacen']))
                     with st.expander(f"⚠️ DISCREPANCIA: {a['ID_Barra']}", expanded=True):
                         st.error(f"Diferencia detectada de **{diff:.2f}**")
+                        st.write(f"Cliente: {a['Cliente']} | Mensajero: {a['Peso_Mensajero']} vs Almacén: {a['Peso_Almacen']}")
             else: st.success("No hay variaciones de peso.")
 
         with ca2:
@@ -278,80 +301,24 @@ def render_admin_dashboard():
                     dias = (hoy - pd.to_datetime(m['Fecha_Registro'])).days
                     with st.expander(f"🛑 MOROSO: {m['Cliente']}", expanded=True):
                         st.warning(f"Paquete {m['ID_Barra']} tiene **{dias} días** sin pago.")
+                        st.write(f"Deuda: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("No hay morosidad crítica.")
 
-# --- 4. DASHBOARD CLIENTE (CORREGIDO CON BARRA) ---
+# --- 4. DASHBOARD CLIENTE ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
-    
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u['correo'].lower()]
-    
-    if not mis_p:
-        st.info("No tienes envíos activos en este momento.")
+    if not mis_p: st.info("No tienes envíos activos.")
     else:
-        busq_cli = st.text_input("🔍 Buscar mi paquete (ID o Estatus):", key="cli_s")
-        if busq_cli:
-            mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
-        
+        busq_cli = st.text_input("🔍 Buscar mi paquete:", key="cli_s")
+        if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
         c1, c2 = st.columns(2)
-        hoy = datetime.now()
-        
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
-                # Cálculos de dinero y progreso
-                tot = float(p.get('Monto_USD', 0.0))
-                abo = float(p.get('Abonado', 0.0))
-                faltante = max(0, tot - abo)
-                perc = min(100, (abo / tot * 100)) if tot > 0 else 0
-                
-                fecha_reg = pd.to_datetime(p.get('Fecha_Registro', hoy))
-                dias_atraso = (hoy - fecha_reg).days
-                icono = obtener_icono_transporte(p.get('Tipo_Traslado'))
-
-                # Alerta de mora
-                alerta_html = ""
-                if dias_atraso > 15 and p.get('Pago') != 'PAGADO':
-                    alerta_html = f"""
-                    <div style="background: rgba(239, 68, 68, 0.15); border-left: 4px solid #f87171; border-radius: 8px; padding: 10px; margin: 15px 0;">
-                        <div style="color: #f87171; font-size: 11px; font-weight: 800;">🔔 AVISO DE MOROSIDAD</div>
-                        <div style="color: white; font-size: 10px;">{dias_atraso} días sin pago completo.</div>
-                    </div>
-                    """
-
-                # Renderizado de Tarjeta con la Barra de Progreso Forzada
-                html_tarjeta = f"""
-                <div class="p-card">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
-                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{icono} #{p['ID_Barra']}</span>
-                            <div style="color: #94a3b8; font-size: 11px; margin-top: 4px;">REGISTRO: {fecha_reg.strftime('%d/%m/%Y')}</div>
-                        </div>
-                        <span style="background:rgba(96,165,250,0.15); color:#60a5fa; border: 1px solid rgba(96,165,250,0.3); padding: 4px 12px; border-radius:20px; font-size:11px; font-weight:700;">
-                            {p['Estado']}
-                        </span>
-                    </div>
-
-                    <div style="margin-top: 20px;">
-                        <small style="color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">Costo del Envío</small>
-                        <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f} <span style="font-size: 14px; color: #64748b;">USD</span></div>
-                    </div>
-
-                    {alerta_html}
-
-                    <div style="margin-top: 25px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                            <span style="color: #4ade80; font-weight: 600;">Pagado: ${abo:.2f}</span>
-                            <span style="color: #f87171; font-weight: 600;">Resta: ${faltante:.2f}</span>
-                        </div>
-                        <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
-                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 6px; transition: width 0.5s ease;"></div>
-                        </div>
-                        <div style="text-align: right; margin-top: 6px; font-size: 10px; color: #94a3b8; font-weight: 600;">{int(perc)}% COMPLETADO</div>
-                    </div>
-                </div>
-                """
-                st.markdown(html_tarjeta, unsafe_allow_html=True)
+                tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
+                perc = (abo / tot * 100) if tot > 0 else 0
+                st.markdown(f'<div class="p-card"><div style="display: flex; justify-content: space-between;"><span style="color:#60a5fa; font-weight:800; font-size: 20px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span><span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 4px 10px; border-radius:10px; font-size:11px;">{p["Estado"]}</span></div><div style="margin-top: 15px;"><small style="opacity:0.7;">Total a pagar</small><div style="font-size: 26px; font-weight: 800; color:white;">${tot:.2f}</div></div><div style="width: 100%; background-color: rgba(239, 68, 68, 0.3); height: 8px; border-radius: 4px; margin-top: 15px;"><div style="width: {perc}%; background: #22c55e; height: 100%; border-radius: 4px;"></div></div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;"><span>Pagado: ${abo:.2f}</span><span>Faltan: ${tot-abo:.2f}</span></div></div>', unsafe_allow_html=True)
 
 # --- 5. LOGICA ACCESO ---
 def render_header():
