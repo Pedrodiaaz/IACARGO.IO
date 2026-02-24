@@ -29,9 +29,7 @@ st.markdown("""
     }
 
     /* Tarjetas de Paquete (Dashboard Cliente) */
-    .p-card {
-        transition: transform 0.3s ease;
-    }
+    .p-card { transition: transform 0.3s ease; }
     .p-card:hover { transform: translateY(-5px); border-color: rgba(96, 165, 250, 0.5) !important; }
 
     /* Títulos de los campos (Labels) en Blanco */
@@ -42,13 +40,8 @@ st.markdown("""
     }
 
     /* FIX: Mantener color permanente en Expanders */
-    [data-testid="stExpander"] {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-    }
-    
-    [data-testid="stExpander"] summary {
-        color: #ffffff !important;
-    }
+    [data-testid="stExpander"] { background-color: rgba(255, 255, 255, 0.03) !important; }
+    [data-testid="stExpander"] summary { color: #ffffff !important; }
 
     /* Botones de Identidad IACargo (Azul Vibrante) */
     div.stButton > button, .stForm div.stButton > button {
@@ -70,10 +63,7 @@ st.markdown("""
     }
 
     /* Inputs Estilizados */
-    div[data-baseweb="input"] { 
-        border-radius: 12px !important; 
-        background-color: rgba(255, 255, 255, 0.9) !important; 
-    }
+    div[data-baseweb="input"] { border-radius: 12px !important; background-color: rgba(255, 255, 255, 0.9) !important; }
     div[data-baseweb="input"] input { color: #0f172a !important; font-weight: 600 !important; }
 
     /* Logo Animado */
@@ -108,7 +98,6 @@ st.markdown("""
 ARCHIVO_DB, ARCHIVO_USUARIOS, ARCHIVO_PAPELERA, ARCHIVO_NOTIF = "inventario_logistica.csv", "usuarios_iacargo.csv", "papelera_iacargo.csv", "notificaciones_iac.csv"
 
 def calcular_monto(valor, tipo, aplica_reempaque=False):
-    # Lógica de negocio: Aéreo por peso, Marítimo por dimensión
     monto = (valor * TARIFA_AEREO_KG) if tipo == "Aéreo" else (valor * TARIFA_MARITIMO_FT3) if tipo == "Marítimo" else (valor * 5.0)
     return monto + COSTO_REEMPAQUE_FIJO if aplica_reempaque else monto
 
@@ -151,7 +140,6 @@ def render_admin_dashboard():
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
-        # REGLA: Aéreo es peso, Marítimo es Dimensión
         label_din = "Pies Cúbicos (ft³)" if f_tra == "Marítimo" else "Peso (Kilogramos)"
         with st.form("reg_form"):
             col1, col2 = st.columns(2)
@@ -220,7 +208,7 @@ def render_admin_dashboard():
             if st.session_state.papelera:
                 g_res = st.selectbox("Restaurar ID:", [p["ID_Barra"] for p in st.session_state.papelera])
                 if st.button("♻️ RESTAURAR SELECCIONADO"):
-                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] == g_res)
+                    paq_r = next(p for p in st.session_state.papelera if p["ID_Barra"] != g_res)
                     st.session_state.inventario.append(paq_r)
                     st.session_state.papelera = [p for p in st.session_state.papelera if p["ID_Barra"] != g_res]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
@@ -269,8 +257,16 @@ def render_admin_dashboard():
                         col_info, col_btn = st.columns([4, 1])
                         with col_info:
                             icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                            badge = '<span style="color:#a78bfa; font-size:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            st.markdown(f'<div class="resumen-row"><div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div><div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div><div style="color:#64748b; font-size:12px; margin-right:15px;">{r["Tipo_Traslado"]}</div></div>', unsafe_allow_html=True)
+                            badge = '<span style="color:#a78bfa; font-size:10px; margin-left:10px;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                            # --- FECHA EN RESUMEN ---
+                            f_reg_str = pd.to_datetime(r['Fecha_Registro']).strftime('%d/%m/%Y')
+                            st.markdown(f"""
+                                <div class="resumen-row">
+                                    <div style="color:#2563eb; font-weight:800; min-width:120px;">{icon} {r["ID_Barra"]}</div>
+                                    <div style="flex-grow:1; margin-left:15px;"><b>{r["Cliente"]}</b> {badge}</div>
+                                    <div style="color:#64748b; font-size:12px; margin-right:15px;">📅 {f_reg_str} | {r["Tipo_Traslado"]}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
                         with col_btn:
                             if st.button(f"VER", key=f"rep_{r['ID_Barra']}"):
                                 rest_p = float(r['Monto_USD']) - float(r['Abonado'])
@@ -318,23 +314,34 @@ def render_client_dashboard():
             with (c1 if i % 2 == 0 else c2):
                 tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
                 perc = (abo / tot * 100) if tot > 0 else 0
-                # Color de la barra: Rojo si falta mucho, Verde si está casi listo
+                f_reg_str = pd.to_datetime(p.get('Fecha_Registro')).strftime('%d/%m/%Y')
                 bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
                 
                 st.markdown(f"""
                 <div class="p-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                            <div style="color:#94a3b8; font-size:12px; margin-top:4px;">📅 Registrado el: {f_reg_str}</div>
+                        </div>
                         <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 6px 12px; border-radius:12px; font-size:12px; font-weight:bold;">{p["Estado"]}</span>
                     </div>
                     <div style="margin-top: 20px;">
                         <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
                         <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f}</div>
                     </div>
-                    <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 10px; border-radius: 5px; margin-top: 20px; overflow: hidden;">
-                        <div style="width: {perc}%; background: {bar_color}; height: 100%; transition: width 0.5s ease;"></div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                             <span style="font-size: 11px; color:#94a3b8;">Progreso de Pago</span>
+                             <span style="font-size: 11px; color:white; font-weight:bold;">{perc:.1f}%</span>
+                        </div>
+                        <div style="width: 100%; background-color: rgba(255, 255, 255, 0.1); height: 12px; border-radius: 6px; overflow: hidden;">
+                            <div style="width: {perc}%; background: {bar_color}; height: 100%; transition: width 0.5s ease;"></div>
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; font-weight: 600;">
+
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 10px; font-weight: 600;">
                         <span style="color:#22c55e;">Abonado: ${abo:.2f}</span>
                         <span style="color:#94a3b8;">Falta: ${tot-abo:.2f}</span>
                     </div>
