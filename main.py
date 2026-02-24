@@ -318,16 +318,21 @@ def render_client_dashboard():
             with (c1 if i % 2 == 0 else c2):
                 tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
                 perc = (abo / tot * 100) if tot > 0 else 0
-                # Color de la barra: Rojo si falta mucho, Verde si está casi listo
                 bar_color = "#22c55e" if perc > 80 else "#eab308" if perc > 40 else "#ef4444"
+                
+                # --- MODIFICACIÓN: EXTRACCIÓN Y FORMATO DE FECHA ---
+                fecha_formateada = pd.to_datetime(p['Fecha_Registro']).strftime('%d/%m/%Y')
                 
                 st.markdown(f"""
                 <div class="p-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span>
+                            <div style="color:#94a3b8; font-size:11px; font-weight:600; margin-top:2px;">Registrado: {fecha_formateada}</div>
+                        </div>
                         <span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 6px 12px; border-radius:12px; font-size:12px; font-weight:bold;">{p["Estado"]}</span>
                     </div>
-                    <div style="margin-top: 20px;">
+                    <div style="margin-top: 15px;">
                         <small style="opacity:0.7; text-transform: uppercase; font-size:10px; letter-spacing:1px;">Costo Total del Envío</small>
                         <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f}</div>
                     </div>
