@@ -60,6 +60,7 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.95);
         color: #0f172a; padding: 12px 18px; border-radius: 12px;
         display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 5px;
     }
     
     .welcome-text { 
@@ -112,7 +113,6 @@ def render_admin_dashboard():
     tabs = st.tabs(["📥 REGISTRO", "⚖️ VALIDACIÓN", "💰 COBROS", "📍 ESTADOS", "🔍 AUDITORÍA", "📊 RESUMEN", "🚨 ALERTAS"])
     t_reg, t_val, t_cob, t_est, t_aud, t_res, t_ale = tabs
 
-    # [REGISTRO, VALIDACIÓN, COBROS, ESTADOS, AUDITORÍA se mantienen igual...]
     with t_reg:
         st.subheader("Registro de Entrada")
         f_tra = st.selectbox("Tipo de Traslado", ["Aéreo", "Marítimo", "Envio Nacional"])
@@ -217,7 +217,7 @@ def render_admin_dashboard():
                     st.session_state.inventario = [p for p in st.session_state.inventario if p["ID_Barra"] != g_ed]
                     guardar_datos(st.session_state.inventario, ARCHIVO_DB); guardar_datos(st.session_state.papelera, ARCHIVO_PAPELERA); st.rerun()
 
-    # --- SECCIÓN MODIFICADA: PESTAÑA RESUMEN ---
+    # --- SECCIÓN ACTUALIZADA: PESTAÑA RESUMEN ---
     with t_res:
         st.subheader("📋 Resumen Logístico por Estados")
         b_box = st.text_input("🔍 Localizar por Código de Caja:", key="res_box_search")
@@ -235,43 +235,47 @@ def render_admin_dashboard():
         
         for est_id, label in config_est:
             df_f = df_res[df_res['Estado'] == est_id] if not df_res.empty else pd.DataFrame()
+            
             with st.expander(f"{label} ({len(df_f)})", expanded=True if b_box else False):
                 if not df_f.empty:
                     for _, r in df_f.iterrows():
-                        # Procesar fecha y datos adicionales
                         f_reg = pd.to_datetime(r['Fecha_Registro']).strftime('%d/%m/%y')
-                        col_info, col_btn = st.columns([4, 1])
+                        icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
+                        badge_reempaque = ' <span style="color:#a78bfa; font-size:10px; font-weight:bold;">[REEMPAQUE]</span>' if r.get("Reempaque") else ""
+                        modalidad = r.get('Modalidad', 'Pago Completo')
                         
-                        with col_info:
-                            icon = obtener_icono_transporte(r.get('Tipo_Traslado'))
-                            badge_reempaque = '<span style="color:#a78bfa; font-size:10px; font-weight:bold;"> [REEMPAQUE]</span>' if r.get("Reempaque") else ""
-                            modalidad = r.get('Modalidad', 'Pago Completo')
-                            
-                            st.markdown(f"""
-                                <div class="resumen-row">
-                                    <div style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="color:#2563eb; font-weight:800; min-width:110px;">{icon} {r["ID_Barra"]}</div>
-                                        <div style="border-left: 1px solid #cbd5e1; height: 20px;"></div>
-                                        <div>
-                                            <b style="color:#1e293b;">{r["Cliente"]}</b>
-                                            <div style="font-size:10px; color:#64748b;">Registrado: {f_reg} | {modalidad} {badge_reempaque}</div>
-                                        </div>
+                        # Fila superior de información rápida
+                        st.markdown(f"""
+                            <div class="resumen-row">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="color:#2563eb; font-weight:800; min-width:110px;">{icon} {r["ID_Barra"]}</div>
+                                    <div style="border-left: 1px solid #cbd5e1; height: 20px;"></div>
+                                    <div>
+                                        <b style="color:#1e293b;">{r["Cliente"]}</b>
+                                        <div style="font-size:10px; color:#64748b;">Registrado: {f_reg} | {modalidad}{badge_reempaque}</div>
                                     </div>
-                                    <div style="color:#64748b; font-size:12px; font-weight:700;">{r["Tipo_Traslado"]}</div>
                                 </div>
-                            """, unsafe_allow_html=True)
+                                <div style="color:#64748b; font-size:12px; font-weight:700;">{r["Tipo_Traslado"]}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
                         
-                        with col_btn:
-                            # Botón de reporte restaurado
-                            if st.button(f"DETALLES", key=f"rep_adm_{r['ID_Barra']}"):
-                                rest_p = float(r['Monto_USD']) - float(r['Abonado'])
-                                st.info(f"""
-                                **Reporte Rápido: {r['ID_Barra']}**
-                                * Total: ${float(r['Monto_USD']):.2f}
-                                * Abonado: ${float(r['Abonado']):.2f}
-                                * Pendiente: ${rest_p:.2f}
-                                """)
-                        st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
+                        # Expander de detalles (Toggle natural)
+                        with st.expander(f"🔍 DETALLES DE {r['ID_Barra']}"):
+                            rest_p = float(r['Monto_USD']) - float(r['Abonado'])
+                            c_aud1, c_aud2 = st.columns(2)
+                            with c_aud1:
+                                st.write(f"**Cliente:** {r['Cliente']}")
+                                st.write(f"**Correo:** {r['Correo']}")
+                                st.write(f"**Modalidad:** {modalidad}")
+                            with c_aud2:
+                                st.write(f"**Monto Total:** ${float(r['Monto_USD']):.2f}")
+                                st.write(f"**Abonado:** ${float(r['Abonado']):.2f}")
+                                if rest_p > 0:
+                                    st.error(f"**Pendiente:** ${rest_p:.2f}")
+                                else:
+                                    st.success("✅ TOTALMENTE PAGADO")
+                        
+                        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
                 else:
                     st.write("No hay paquetes en esta categoría.")
 
