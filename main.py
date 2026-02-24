@@ -28,6 +28,21 @@ st.markdown("""
         padding: 15px; margin-bottom: 20px;
     }
 
+    /* Estilo para las Tarjetas de Paquetes (Cliente) */
+    .p-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease;
+    }
+    .p-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(96, 165, 250, 0.4);
+    }
+
     /* Títulos de los campos (Labels) en Blanco */
     [data-testid="stWidgetLabel"] p {
         color: #ffffff !important;
@@ -35,42 +50,17 @@ st.markdown("""
         text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
 
-    /* FIX: Mantener color permanente en Expanders y anular efectos de interacción */
-    [data-testid="stExpander"] {
-        background-color: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    [data-testid="stExpander"] summary {
-        background-color: transparent !important;
-        color: #ffffff !important;
-    }
-    
-    [data-testid="stExpander"] summary:hover, 
-    [data-testid="stExpander"] summary:focus,
-    [data-testid="stExpander"] summary:active {
-        background-color: transparent !important;
-        color: #ffffff !important;
-        outline: none !important;
-    }
-
-    /* Botones de Identidad IACargo (Azul Vibrante) */
+    /* Botones de Identidad IACargo */
     div.stButton > button, .stForm div.stButton > button {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
         border-radius: 12px !important; 
         border: none !important;
         font-weight: 700 !important;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
         width: 100% !important; 
         padding: 12px 20px !important;
         box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
-        transition: all 0.3s ease-in-out !important;
-    }
-    div.stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
     }
 
     /* Inputs Estilizados */
@@ -90,20 +80,11 @@ st.markdown("""
     }
     @keyframes shine { to { background-position: 200% center; } }
 
-    .resumen-row {
-        background: rgba(255, 255, 255, 0.95);
-        color: #0f172a; padding: 12px 18px; border-radius: 12px;
-        display: flex; justify-content: space-between; align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    
-    button[data-baseweb="tab"] { color: #94a3b8 !important; font-weight: 600 !important; }
-    button[aria-selected="true"] { color: #60a5fa !important; border-bottom-color: #60a5fa !important; }
-
     .welcome-text { 
         font-size: 32px; font-weight: 800; 
         background: linear-gradient(90deg, #ffffff, #94a3b8);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -304,21 +285,79 @@ def render_admin_dashboard():
                         st.write(f"Deuda: ${float(m['Monto_USD']) - float(m['Abonado']):.2f}")
             else: st.success("No hay morosidad crítica.")
 
-# --- 4. DASHBOARD CLIENTE ---
+# --- 4. DASHBOARD CLIENTE (ACTUALIZADO) ---
 def render_client_dashboard():
     u = st.session_state.usuario_identificado
     st.markdown(f'<div class="welcome-text">Bienvenido, {u["nombre"]}</div>', unsafe_allow_html=True)
+    
     mis_p = [p for p in st.session_state.inventario if str(p.get('Correo', '')).lower() == u['correo'].lower()]
-    if not mis_p: st.info("No tienes envíos activos.")
+    
+    if not mis_p:
+        st.info("No tienes envíos activos en este momento.")
     else:
-        busq_cli = st.text_input("🔍 Buscar mi paquete:", key="cli_s")
-        if busq_cli: mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
+        busq_cli = st.text_input("🔍 Buscar mi paquete (ID o Estatus):", key="cli_s")
+        if busq_cli:
+            mis_p = [p for p in mis_p if busq_cli.lower() in p['ID_Barra'].lower() or busq_cli.lower() in p['Estado'].lower()]
+        
         c1, c2 = st.columns(2)
+        hoy = datetime.now()
+        
         for i, p in enumerate(mis_p):
             with (c1 if i % 2 == 0 else c2):
-                tot, abo = float(p.get('Monto_USD', 0.0)), float(p.get('Abonado', 0.0))
+                tot = float(p.get('Monto_USD', 0.0))
+                abo = float(p.get('Abonado', 0.0))
+                faltante = tot - abo
                 perc = (abo / tot * 100) if tot > 0 else 0
-                st.markdown(f'<div class="p-card"><div style="display: flex; justify-content: space-between;"><span style="color:#60a5fa; font-weight:800; font-size: 20px;">{obtener_icono_transporte(p.get("Tipo_Traslado"))} #{p["ID_Barra"]}</span><span style="background:rgba(96,165,250,0.2); color:#60a5fa; padding: 4px 10px; border-radius:10px; font-size:11px;">{p["Estado"]}</span></div><div style="margin-top: 15px;"><small style="opacity:0.7;">Total a pagar</small><div style="font-size: 26px; font-weight: 800; color:white;">${tot:.2f}</div></div><div style="width: 100%; background-color: rgba(239, 68, 68, 0.3); height: 8px; border-radius: 4px; margin-top: 15px;"><div style="width: {perc}%; background: #22c55e; height: 100%; border-radius: 4px;"></div></div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;"><span>Pagado: ${abo:.2f}</span><span>Faltan: ${tot-abo:.2f}</span></div></div>', unsafe_allow_html=True)
+                
+                fecha_reg = pd.to_datetime(p['Fecha_Registro'])
+                dias_atraso = (hoy - fecha_reg).days
+                alerta_mora = ""
+                
+                # Icono de alerta de atraso si > 15 días y no pagado
+                if dias_atraso > 15 and p['Pago'] != 'PAGADO':
+                    alerta_mora = f"""
+                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 8px 12px; margin: 15px 0; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">🔔</span>
+                        <div>
+                            <div style="color: #f87171; font-size: 12px; font-weight: 800; text-transform: uppercase;">Aviso de Morosidad</div>
+                            <div style="color: white; font-size: 11px; opacity: 0.9;">Paquete con {dias_atraso} días de antigüedad sin completar pago.</div>
+                        </div>
+                    </div>
+                    """
+
+                st.markdown(f"""
+                <div class="p-card">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <span style="color:#60a5fa; font-weight:800; font-size: 22px;">
+                                {obtener_icono_transporte(p.get('Tipo_Traslado'))} #{p['ID_Barra']}
+                            </span>
+                            <div style="color: #94a3b8; font-size: 11px; margin-top: 4px;">INGRESADO: {fecha_reg.strftime('%d/%m/%Y')}</div>
+                        </div>
+                        <span style="background:rgba(96,165,250,0.15); color:#60a5fa; border: 1px solid rgba(96,165,250,0.3); padding: 4px 12px; border-radius:20px; font-size:11px; font-weight:700;">
+                            {p['Estado']}
+                        </span>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <small style="color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-size: 10px;">Total del Servicio</small>
+                        <div style="font-size: 28px; font-weight: 800; color:white;">${tot:.2f} <span style="font-size: 14px; color: #64748b;">USD</span></div>
+                    </div>
+
+                    {alerta_mora}
+
+                    <div style="margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                            <span style="color: #22c55e; font-weight: 600;">Pagado: ${abo:.2f}</span>
+                            <span style="color: #f87171; font-weight: 600;">Pendiente: ${faltante:.2f}</span>
+                        </div>
+                        <div style="width: 100%; background-color: rgba(239, 68, 68, 0.2); height: 10px; border-radius: 5px; overflow: hidden;">
+                            <div style="width: {perc}%; background: linear-gradient(90deg, #22c55e, #4ade80); height: 100%; border-radius: 5px; transition: width 0.5s ease;"></div>
+                        </div>
+                        <div style="text-align: right; margin-top: 5px; font-size: 10px; color: #64748b;">{int(perc)}% completado</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # --- 5. LOGICA ACCESO ---
 def render_header():
